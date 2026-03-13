@@ -114,7 +114,7 @@ export default function CuentaModal({ isOpen, onClose, onSuccess, cuenta }: Cuen
                                 />
                             </div>
                             <div className="flex flex-col gap-1 w-full">
-                                <span className="text-sm text-gray-500">Seleccione un identificador visual.</span>
+                                <span className="text-sm text-muted-foreground">Seleccione un identificador visual.</span>
                                 <Input
                                     type="text"
                                     value={formData.color.toUpperCase()}
@@ -125,7 +125,7 @@ export default function CuentaModal({ isOpen, onClose, onSuccess, cuenta }: Cuen
                         </div>
                     </div>
 
-                    <div className="bg-gray-50 p-4 rounded-lg border flex flex-col gap-2">
+                    <div className="bg-muted/30 p-4 rounded-lg border border-border flex flex-col gap-2">
                         <div className="flex items-start space-x-3">
                             <Checkbox
                                 id="saldo"
@@ -134,10 +134,10 @@ export default function CuentaModal({ isOpen, onClose, onSuccess, cuenta }: Cuen
                                 className="mt-1"
                             />
                             <div className="flex flex-col">
-                                <Label htmlFor="saldo" className="font-semibold text-gray-900 cursor-pointer">
+                                <Label htmlFor="saldo" className="font-semibold text-foreground cursor-pointer">
                                     Agregar a Saldo Total
                                 </Label>
-                                <span className="text-xs text-gray-500 leading-snug mt-1">
+                                <span className="text-xs text-muted-foreground leading-snug mt-1">
                                     Si marca esta opción, el dinero que ingrese a esta cuenta se sumará matemáticamente al indicador global de &quot;Saldo Total&quot; en la pantalla de Movimientos.
                                 </span>
                             </div>

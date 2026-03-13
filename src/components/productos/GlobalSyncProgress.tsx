@@ -60,20 +60,21 @@ export function GlobalSyncProgress() {
         socketInstance.on("sync_progress", (data: SyncProgressData) => {
             console.log("[GlobalSyncProgress] sync_progress received:", data);
 
+            // Always track the latest known jobId so we can match the completion event
+            if (data.jobId) lastJobIdRef.current = data.jobId;
+
             // Job is actively running — show the pill
             if (data.status === "processing" || data.status === "pending") {
-                lastJobIdRef.current = data.jobId;
                 setSyncData(data);
             }
 
-            // Job just finished — hide pill and show toast once
+            // Job just finished — hide pill and show toast
+            // Accept if jobId matches OR if lastJobIdRef was null (client reconnected mid-job)
             if (data.status === "completed") {
-                if (data.jobId === lastJobIdRef.current || lastJobIdRef.current === null) {
-                    setSyncData(null);
-                    lastJobIdRef.current = null;
-                    setToast({ visible: true, metrics: data.metrics });
-                    setTimeout(() => setToast({ visible: false, metrics: null }), 7000);
-                }
+                setSyncData(null);
+                lastJobIdRef.current = null;
+                setToast({ visible: true, metrics: data.metrics });
+                setTimeout(() => setToast({ visible: false, metrics: null }), 7000);
             }
         });
 

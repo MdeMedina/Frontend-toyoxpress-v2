@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import ClientLayout from "./ClientLayout";
+import HorarioShield from "@/components/auth/HorarioShield";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,13 +26,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen overflow-hidden flex bg-background`}
       >
-        <div className="flex w-full h-full">
-          <ClientLayout>{children}</ClientLayout>
-        </div>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <div className="flex w-full h-full">
+            <HorarioShield>
+              <ClientLayout>{children}</ClientLayout>
+            </HorarioShield>
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -91,14 +91,14 @@ export default function CuentasTable() {
                 </RequirePermission>
             </div>
 
-            <div className="bg-white border rounded-lg overflow-hidden shadow-sm">
+            <div className="bg-card border rounded-lg overflow-hidden shadow-sm">
                 <Table>
                     <TableHeader>
-                        <TableRow className="hover:bg-transparent bg-gray-50 border-b">
-                            <TableHead className="font-bold text-black py-4 w-1/3">Nombre de la cuenta</TableHead>
-                            <TableHead className="font-bold text-black w-1/3">Etiqueta de Color</TableHead>
-                            <TableHead className="font-bold text-black text-center">Contabilidad</TableHead>
-                            <TableHead className="font-bold text-black text-right pr-6">Acciones</TableHead>
+                        <TableRow className="hover:bg-transparent bg-muted/30 border-b">
+                            <TableHead className="font-bold text-foreground py-4 w-1/3">Nombre de la cuenta</TableHead>
+                            <TableHead className="font-bold text-foreground w-1/3">Etiqueta de Color</TableHead>
+                            <TableHead className="font-bold text-foreground text-center">Contabilidad</TableHead>
+                            <TableHead className="font-bold text-foreground text-right pr-6">Acciones</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -107,8 +107,8 @@ export default function CuentasTable() {
                         ) : cuentas.length === 0 ? (
                             <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No hay cuentas registradas.</TableCell></TableRow>
                         ) : cuentas.map((cuenta) => (
-                            <TableRow key={cuenta._id} className="border-b last:border-0 hover:bg-gray-50/50">
-                                <TableCell className="py-4 font-semibold text-gray-800 text-base">
+                            <TableRow key={cuenta._id} className="border-b last:border-0 hover:bg-muted/10">
+                                <TableCell className="py-4 font-semibold text-foreground text-base">
                                     {cuenta.label.toUpperCase()}
                                 </TableCell>
                                 <TableCell>
@@ -117,20 +117,20 @@ export default function CuentasTable() {
                                             className="w-6 h-6 rounded-full border shadow-sm"
                                             style={{ backgroundColor: cuenta.color || '#000000' }}
                                         ></div>
-                                        <span className="text-sm font-mono text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                                        <span className="text-sm font-mono text-muted-foreground bg-muted/40 px-2 py-1 rounded border border-border">
                                             {cuenta.color || '#000000'}
                                         </span>
                                     </div>
                                 </TableCell>
                                 <TableCell className="text-center">
                                     {cuenta.saldo ? (
-                                        <span className="inline-flex items-center gap-1.5 py-1 px-3 rounded-md text-xs font-medium bg-green-100 text-green-800">
+                                        <span className="inline-flex items-center gap-1.5 py-1 px-3 rounded-md text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                             <span className="w-1.5 h-1.5 rounded-full bg-green-600"></span>
                                             Suma al Saldo Total
                                         </span>
                                     ) : (
-                                        <span className="inline-flex items-center gap-1.5 py-1 px-3 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
+                                        <span className="inline-flex items-center gap-1.5 py-1 px-3 rounded-md text-xs font-medium bg-muted/50 text-muted-foreground border border-border">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground"></span>
                                             Excluida del Saldo
                                         </span>
                                     )}

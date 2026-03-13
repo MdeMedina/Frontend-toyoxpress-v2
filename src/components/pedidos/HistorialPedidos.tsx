@@ -6,6 +6,7 @@ import { useAuthStore } from "@/lib/store/useAuthStore";
 import axios from "axios";
 import { PedidoStatusBadge } from "./PedidoStatusBadge";
 import { ChevronLeft, ChevronRight, ClipboardList } from "lucide-react";
+import { io } from "socket.io-client";
 
 interface Pedido {
     _id: string;
@@ -49,6 +50,20 @@ export function HistorialPedidos({ refreshTrigger }: Props) {
     }, [token, backendUrl]);
 
     useEffect(() => { fetchPedidos(page); }, [page, fetchPedidos, refreshTrigger]);
+
+    useEffect(() => {
+        const socketUrl = backendUrl.replace(/\/api\/?$/, "");
+        const socketInstance = io(socketUrl, { transports: ["websocket", "polling"] });
+
+        socketInstance.on("pedido_completado", () => {
+            fetchPedidos(1);
+            setPage(1);
+        });
+
+        return () => {
+            socketInstance.disconnect();
+        };
+    }, [backendUrl, fetchPedidos]);
 
     return (
         <div className="flex flex-col gap-4">

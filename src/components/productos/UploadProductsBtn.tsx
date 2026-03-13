@@ -7,6 +7,7 @@ import * as XLSX from "xlsx";
 import Swal from "sweetalert2";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import axios from "axios";
+import RequirePermission from "@/components/auth/RequirePermission";
 
 export function UploadProductsBtn() {
     const [isUploading, setIsUploading] = useState(false);
@@ -89,29 +90,31 @@ export function UploadProductsBtn() {
     };
 
     return (
-        <label className="relative cursor-pointer group">
-            <input
-                type="file"
-                accept=".xlsx, .xls"
-                className="hidden"
-                onChange={handleFileUpload}
-                disabled={isUploading}
-            />
-            <Button asChild disabled={isUploading} className="pointer-events-none group-hover:bg-primary/90 transition-all shadow-md">
-                <div>
-                    {isUploading ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Procesando Excel...
-                        </>
-                    ) : (
-                        <>
-                            <CloudUpload className="mr-2 h-4 w-4" />
-                            Subir Inventario (Excel)
-                        </>
-                    )}
-                </div>
-            </Button>
-        </label>
+        <RequirePermission perm="cargarProductos">
+            <label className="relative cursor-pointer group">
+                <input
+                    type="file"
+                    accept=".xlsx, .xls"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                    disabled={isUploading}
+                />
+                <Button asChild disabled={isUploading} className="pointer-events-none group-hover:bg-primary/90 transition-all shadow-md">
+                    <div>
+                        {isUploading ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Procesando Excel...
+                            </>
+                        ) : (
+                            <>
+                                <CloudUpload className="mr-2 h-4 w-4" />
+                                Subir Inventario (Excel)
+                            </>
+                        )}
+                    </div>
+                </Button>
+            </label>
+        </RequirePermission>
     );
 }

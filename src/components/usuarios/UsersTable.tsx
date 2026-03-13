@@ -94,7 +94,7 @@ export default function UsersTable() {
                         const activePermsCount = Object.values(user.permissions || {}).filter(val => val === true).length;
                         return (
                             <tr key={user._id} className="hover:bg-muted/20 transition-colors">
-                                <td className="px-6 py-4 font-medium text-gray-900">{user.username}</td>
+                                <td className="px-6 py-4 font-medium text-foreground">{user.username}</td>
                                 <td className="px-6 py-4 text-foreground">{user.email}</td>
                                 <td className="px-6 py-4 text-center">
                                     <span className="inline-flex items-center justify-center rounded-full bg-blue-100 px-2.5 py-0.5 text-blue-700">

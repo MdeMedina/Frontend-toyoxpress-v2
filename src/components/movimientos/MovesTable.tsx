@@ -172,7 +172,7 @@ export default function MovesTable() {
         <div className="space-y-4">
 
             {/* Top Filter and Totals Bar (Re-designed to match image) */}
-            <div className="bg-white p-4 rounded-xl border shadow-sm">
+            <div className="bg-card p-4 rounded-xl border shadow-sm">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold">Filtros de busqueda de movimientos</h2>
                 </div>
@@ -312,7 +312,7 @@ export default function MovesTable() {
                 </div>
 
                 {/* Legacy V1 layout: Summary Pills immediately under Filters row */}
-                <div className="flex flex-col sm:flex-row justify-between items-center bg-gray-50 pt-2 pb-0 mb-4 px-2">
+                <div className="flex flex-col sm:flex-row justify-between items-center bg-muted/40 rounded-lg pt-2 pb-2 mb-4 px-2">
                     <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">Caja Chica:</span>
                         <div className={`px-[6px] py-[2px] rounded-[5px] text-white font-bold text-[16px] leading-tight ${cajaChica >= 0 ? "bg-[green]" : "bg-[#B21F00]"
@@ -384,9 +384,9 @@ export default function MovesTable() {
             </div>
 
             {/* Pagination Controls */}
-            <div className="flex items-center justify-between bg-white border rounded-lg p-2 mb-4 shadow-sm">
+            <div className="flex items-center justify-between bg-card border rounded-lg p-2 mb-4 shadow-sm">
                 <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-700">Mostrar:</span>
+                    <span className="text-sm font-medium text-foreground">Mostrar:</span>
                     <select
                         className="h-8 rounded-md border border-input bg-transparent px-2 py-1 text-sm shadow-sm"
                         value={limit}
@@ -410,7 +410,7 @@ export default function MovesTable() {
                     >
                         Anterior
                     </Button>
-                    <span className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                    <span className="text-sm font-medium text-foreground flex items-center gap-1">
                         Página
                         <Input
                             value={inputPage}
@@ -449,11 +449,11 @@ export default function MovesTable() {
             </div>
 
             {/* Tabla de Resultados (Coincidiendo con UI original) */}
-            <div className="bg-white border rounded-lg overflow-hidden shadow-sm">
+            <div className="bg-card border rounded-lg overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
                     <Table>
                         <TableHeader>
-                            <TableRow className="hover:bg-transparent bg-gray-50 border-b">
+                            <TableRow className="bg-muted/30 hover:bg-muted/30 font-bold border-b">
                                 <TableHead className="font-bold text-black py-4">
                                     <button
                                         className="flex items-center gap-1 hover:text-gray-600 focus:outline-none"
@@ -473,12 +473,12 @@ export default function MovesTable() {
                                         {sortBy !== 'id' && <span className="text-xs text-gray-300">▼</span>}
                                     </button>
                                 </TableHead>
-                                <TableHead className="font-bold text-black">Usuario</TableHead>
-                                <TableHead className="font-bold text-black">Cuenta</TableHead>
-                                <TableHead className="font-bold text-black">Concepto</TableHead>
-                                <TableHead className="font-bold text-black">Status</TableHead>
-                                <TableHead className="font-bold text-black">Nro de aprobacion</TableHead>
-                                <TableHead className="font-bold text-black">
+                                <TableHead className="font-bold text-foreground">Usuario</TableHead>
+                                <TableHead className="font-bold text-foreground py-3">Cuenta</TableHead>
+                                <TableHead className="font-bold text-foreground">Concepto</TableHead>
+                                <TableHead className="font-bold text-foreground">Status</TableHead>
+                                <TableHead className="font-bold text-foreground">Nro de aprobacion</TableHead>
+                                <TableHead className="font-bold text-foreground">
                                     <button
                                         className="flex items-center gap-1 hover:text-gray-600 focus:outline-none"
                                         onClick={() => {
@@ -497,8 +497,8 @@ export default function MovesTable() {
                                         {sortBy !== 'creado' && <span className="text-xs text-gray-300">▼</span>}
                                     </button>
                                 </TableHead>
-                                <TableHead className="font-bold text-black">Acciones</TableHead>
-                                <TableHead className="text-right font-bold text-black">Monto</TableHead>
+                                <TableHead className="font-bold text-foreground">Acciones</TableHead>
+                                <TableHead className="text-right font-bold text-foreground py-3">Monto</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -523,13 +523,13 @@ export default function MovesTable() {
                                                 {ident}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="text-sm font-medium text-gray-700">
+                                        <TableCell className="text-sm font-medium text-foreground">
                                             {move.usuario || move.name}
                                         </TableCell>
-                                        <TableCell className="text-sm text-gray-700">
+                                        <TableCell className="text-sm text-foreground/80">
                                             {move.cuenta}
                                         </TableCell>
-                                        <TableCell className="max-w-[200px] truncate text-sm text-gray-700" title={move.concepto}>
+                                        <TableCell className="max-w-[200px] truncate text-sm text-foreground/80" title={move.concepto}>
                                             {move.concepto.toUpperCase()}
                                         </TableCell>
                                         <TableCell>
@@ -537,10 +537,10 @@ export default function MovesTable() {
                                                 {displayStatus}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="text-sm text-gray-700">
+                                        <TableCell className="text-sm text-foreground/80">
                                             {nroAprobacion}
                                         </TableCell>
-                                        <TableCell className="whitespace-nowrap text-sm text-gray-700">
+                                        <TableCell className="whitespace-nowrap text-sm text-foreground/80">
                                             {(() => {
                                                 try {
                                                     const dateVal = move.fecha ? new Date(move.fecha) : (move.creado ? new Date(move.creado) : null);
@@ -584,7 +584,7 @@ export default function MovesTable() {
                                                 </RequirePermission>
                                             </div>
                                         </TableCell>
-                                        <TableCell className={`text-right font-medium tracking-tight ${displayMonto < 0 ? 'text-[#dc3545]' : 'text-gray-700'}`}>
+                                        <TableCell className={`text-right font-medium tracking-tight ${displayMonto < 0 ? 'text-destructive' : 'text-foreground'}`}>
                                             {formatMoneda(displayMonto)}
                                         </TableCell>
                                     </TableRow>

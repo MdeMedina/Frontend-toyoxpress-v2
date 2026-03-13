@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingCart, ClipboardList } from "lucide-react";
+import { ShoppingCart, ClipboardList, BookOpen } from "lucide-react";
 import { VentaForm } from "@/components/pedidos/VentaForm";
 import { HistorialPedidos } from "@/components/pedidos/HistorialPedidos";
+import { InventarioModal } from "@/components/pedidos/InventarioModal";
 
 type Tab = "nueva" | "historial";
 
 export default function PedidosPage() {
     const [tab, setTab] = useState<Tab>("nueva");
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [showInventario, setShowInventario] = useState(false);
 
     const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
         { id: "nueva", label: "Nueva Venta", icon: <ShoppingCart className="h-4 w-4" /> },
@@ -27,6 +29,15 @@ export default function PedidosPage() {
                         <p className="text-xs text-muted-foreground">Crea y gestiona tus órdenes de venta</p>
                     </div>
                 </div>
+
+                {/* Inventory button — always visible in the header */}
+                <button
+                    onClick={() => setShowInventario(true)}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-primary/30 text-primary hover:bg-primary/10 rounded-xl transition-colors shadow-sm"
+                >
+                    <BookOpen className="h-4 w-4" />
+                    Ver Inventario
+                </button>
             </div>
 
             {/* Tabs */}
@@ -36,8 +47,8 @@ export default function PedidosPage() {
                         key={t.id}
                         onClick={() => setTab(t.id)}
                         className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${tab === t.id
-                                ? "bg-card shadow-sm text-foreground"
-                                : "text-muted-foreground hover:text-foreground"
+                            ? "bg-card shadow-sm text-foreground"
+                            : "text-muted-foreground hover:text-foreground"
                             }`}
                     >
                         {t.icon} {t.label}
@@ -54,6 +65,9 @@ export default function PedidosPage() {
                     <HistorialPedidos refreshTrigger={refreshTrigger} />
                 )}
             </div>
+
+            {/* Inventory modal */}
+            <InventarioModal open={showInventario} onClose={() => setShowInventario(false)} />
         </div>
     );
 }

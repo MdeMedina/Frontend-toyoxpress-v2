@@ -217,7 +217,7 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent id="move-modal-content" className="sm:max-w-[700px] p-0 overflow-hidden bg-white">
+            <DialogContent id="move-modal-content" className="sm:max-w-[700px] p-0 overflow-hidden bg-background">
                 <DialogHeader className="sr-only">
                     <DialogTitle>{move ? 'Editar Movimiento' : 'Nuevo Movimiento'}</DialogTitle>
                 </DialogHeader>
@@ -234,7 +234,7 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
                                     required
                                     value={formData.movimiento}
                                     onChange={(e) => setFormData({ ...formData, movimiento: e.target.value })}
-                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-300"
+                                    className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm focus-[1px]:outline-none focus:ring-1 focus:ring-ring"
                                 >
                                     <option value="" disabled>Select...</option>
                                     <option value="ingreso">Ingreso</option>
@@ -248,7 +248,7 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
                                     required
                                     value={formData.cuenta}
                                     onChange={(e) => setFormData({ ...formData, cuenta: e.target.value })}
-                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-300"
+                                    className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm focus-[1px]:outline-none focus:ring-1 focus:ring-ring"
                                 >
                                     <option value="" disabled>Select...</option>
                                     {cuentasDB.map((c) => (
@@ -354,7 +354,7 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
                                         <Input
                                             disabled
                                             value={formData.total}
-                                            className="w-full pr-8 h-10 font-bold text-gray-900 bg-white"
+                                            className="w-full pr-8 h-10 font-bold bg-transparent"
                                         />
                                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">$</span>
                                     </div>
@@ -370,7 +370,7 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
                                     required
                                     value={formData.concepto}
                                     onChange={(e) => setFormData({ ...formData, concepto: e.target.value })}
-                                    className="flex min-h-[80px] w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-300 resize-none"
+                                    className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
                                 />
                             </div>
 

@@ -199,7 +199,7 @@ export default function UserModal({ isOpen, onClose, onSuccess, userToEdit }: Us
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent id="user-modal-content" className="sm:max-w-[800px] p-0 overflow-hidden bg-white max-h-[90vh] flex flex-col">
+            <DialogContent id="user-modal-content" className="sm:max-w-[800px] p-0 overflow-hidden bg-background max-h-[90vh] flex flex-col">
                 <DialogHeader className="p-6 pb-2">
                     <DialogTitle className="text-xl">
                         {userToEdit ? 'Editar Usuario y Permisos' : 'Registrar Nuevo Usuario'}
@@ -250,7 +250,7 @@ export default function UserModal({ isOpen, onClose, onSuccess, userToEdit }: Us
 
                         {/* Permissions Grid */}
                         <div className="space-y-4 mb-4">
-                            <h3 className="text-lg font-semibold text-gray-900">Permisos Granulares</h3>
+                            <h3 className="text-lg font-semibold text-foreground">Permisos Granulares</h3>
 
                             {permissionCategories.map((category) => (
                                 <div key={category.title} className="bg-gray-50/80 p-4 rounded-lg border border-gray-200">

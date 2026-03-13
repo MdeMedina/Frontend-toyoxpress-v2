@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import {
     LayoutDashboard,
@@ -13,26 +14,29 @@ import {
     LogOut,
     UserCog,
     ContactRound,
+    Map
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { useRouter } from "next/navigation";
 import RequirePermission from "@/components/auth/RequirePermission";
+import { MapModal } from "./MapModal";
 
 const navigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Movimientos", href: "/movimientos", icon: ArrowLeftRight, perm: "verMovimientos" },
     { name: "Cuentas", href: "/cuentas", icon: Users, perm: "configurarCuentas" },
     { name: "Usuarios", href: "/usuarios", icon: UserCog, perm: "crearUsuarios" },
-    { name: "Productos", href: "/productos", icon: Package },
+    { name: "Productos", href: "/productos", icon: Package, perm: "cargarProductos" },
     { name: "Clientes", href: "/clientes", icon: ContactRound, perm: "verClientes" },
     { name: "Pedidos", href: "/pedidos", icon: ShoppingCart },
-    { name: "Configuración", href: "/settings", icon: Settings },
+    { name: "Configuración", href: "/configuracion", icon: Settings },
 ];
 
 export function Sidebar() {
     const pathname = usePathname();
     const logout = useAuthStore((state: any) => state.logout);
     const router = useRouter();
+    const [mapOpen, setMapOpen] = useState(false);
 
     const handleLogout = () => {
         logout();
@@ -84,6 +88,13 @@ export function Sidebar() {
             </div>
             <div className="p-4 border-t border-border">
                 <button
+                    onClick={() => setMapOpen(true)}
+                    className="flex w-full items-center rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors mb-2"
+                >
+                    <Map className="mr-3 h-5 w-5 flex-shrink-0" aria-hidden="true" />
+                    Mapa
+                </button>
+                <button
                     onClick={handleLogout}
                     className="flex w-full items-center rounded-md px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
                 >
@@ -91,6 +102,8 @@ export function Sidebar() {
                     Cerrar Sesión
                 </button>
             </div>
+
+            <MapModal open={mapOpen} onOpenChange={setMapOpen} />
         </div>
     );
 }

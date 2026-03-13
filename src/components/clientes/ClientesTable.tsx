@@ -12,6 +12,7 @@ interface Cliente {
     Nombre: string;
     Vendedor?: string;
     Telefonos?: string;
+    'Correo Electronico'?: string;
     'Tipo de Precio'?: string;
     Estado?: string;
     Ciudad?: string;
@@ -94,6 +95,7 @@ export function ClientesTable({ refreshTrigger }: Props) {
                             <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nombre</th>
                             <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-36">Vendedor</th>
                             <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-36">Teléfono</th>
+                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Correo Electrónico</th>
                             <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-28">Ciudad</th>
                             <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-32">Tipo Precio</th>
                             <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-28">Estado</th>
@@ -102,13 +104,13 @@ export function ClientesTable({ refreshTrigger }: Props) {
                     <tbody className="divide-y divide-border">
                         {loading ? (
                             <tr>
-                                <td colSpan={7} className="text-center py-12 text-muted-foreground text-sm">
+                                <td colSpan={8} className="text-center py-12 text-muted-foreground text-sm">
                                     Cargando clientes...
                                 </td>
                             </tr>
                         ) : clientes.length === 0 ? (
                             <tr>
-                                <td colSpan={7} className="text-center py-12 text-muted-foreground text-sm">
+                                <td colSpan={8} className="text-center py-12 text-muted-foreground text-sm">
                                     {search ? "No se encontraron resultados para tu búsqueda." : "Aún no hay clientes. Sube un Excel para comenzar."}
                                 </td>
                             </tr>
@@ -119,6 +121,7 @@ export function ClientesTable({ refreshTrigger }: Props) {
                                     <td className="px-4 py-2.5 font-medium text-foreground">{c.Nombre || "—"}</td>
                                     <td className="px-4 py-2.5 text-sm text-muted-foreground">{c.Vendedor || "—"}</td>
                                     <td className="px-4 py-2.5 text-sm text-muted-foreground">{c.Telefonos || "—"}</td>
+                                    <td className="px-4 py-2.5 text-sm text-muted-foreground truncate max-w-[150px]" title={c['Correo Electronico']}>{c['Correo Electronico'] || "—"}</td>
                                     <td className="px-4 py-2.5 text-sm text-muted-foreground">{c.Ciudad || "—"}</td>
                                     <td className="px-4 py-2.5">
                                         {c['Tipo de Precio'] ? (

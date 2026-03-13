@@ -2,6 +2,7 @@
 
 import { Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 
 interface Linea {
     codigo: string;
@@ -20,6 +21,8 @@ interface Props {
 }
 
 export function CartTable({ lineas, onCantidadChange, onRemove }: Props) {
+    const consultarPrecios = useAuthStore((state: any) => state.permissions?.consultarPrecios);
+
     const totalGeneral = lineas.reduce((s, l) => s + l.total, 0);
     const itemsTotal = lineas.reduce((s, l) => s + (Number(l.cantidad) || 0), 0);
 
@@ -41,8 +44,8 @@ export function CartTable({ lineas, onCantidadChange, onRemove }: Props) {
                             <th className="px-3 py-2.5 text-left">Descripción</th>
                             <th className="px-3 py-2.5 text-left w-24">Marca</th>
                             <th className="px-3 py-2.5 text-center w-24">Cantidad</th>
-                            <th className="px-3 py-2.5 text-right w-24">P.U.</th>
-                            <th className="px-3 py-2.5 text-right w-28">Total</th>
+                            {consultarPrecios && <th className="px-3 py-2.5 text-right w-24">P.U.</th>}
+                            {consultarPrecios && <th className="px-3 py-2.5 text-right w-28">Total</th>}
                             <th className="px-3 py-2.5 w-10" />
                         </tr>
                     </thead>
@@ -68,8 +71,8 @@ export function CartTable({ lineas, onCantidadChange, onRemove }: Props) {
                                         className="h-7 w-16 text-center mx-auto text-xs"
                                     />
                                 </td>
-                                <td className="px-3 py-2 text-right text-muted-foreground">${l.precio.toFixed(2)}</td>
-                                <td className="px-3 py-2 text-right font-semibold">${l.total.toFixed(2)}</td>
+                                {consultarPrecios && <td className="px-3 py-2 text-right text-muted-foreground">${l.precio.toFixed(2)}</td>}
+                                {consultarPrecios && <td className="px-3 py-2 text-right font-semibold">${l.total.toFixed(2)}</td>}
                                 <td className="px-3 py-2">
                                     <button
                                         onClick={() => onRemove(i)}
@@ -86,7 +89,7 @@ export function CartTable({ lineas, onCantidadChange, onRemove }: Props) {
             <div className="flex justify-end gap-6 text-sm pr-1">
                 <span className="text-muted-foreground">Líneas: <span className="font-semibold text-foreground">{lineas.length}</span></span>
                 <span className="text-muted-foreground">Items: <span className="font-semibold text-foreground">{itemsTotal}</span></span>
-                <span className="text-muted-foreground">Total: <span className="font-bold text-foreground text-base">${totalGeneral.toFixed(2)}</span></span>
+                {consultarPrecios && <span className="text-muted-foreground">Total: <span className="font-bold text-foreground text-base">${totalGeneral.toFixed(2)}</span></span>}
             </div>
         </div>
     );
