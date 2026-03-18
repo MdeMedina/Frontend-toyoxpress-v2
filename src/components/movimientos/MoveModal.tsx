@@ -234,7 +234,7 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
                                     required
                                     value={formData.movimiento}
                                     onChange={(e) => setFormData({ ...formData, movimiento: e.target.value })}
-                                    className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm focus-[1px]:outline-none focus:ring-1 focus:ring-ring"
+                                    className="flex h-10 w-full rounded-md border border-input bg-background text-foreground px-3 py-2 text-sm focus-[1px]:outline-none focus:ring-1 focus:ring-ring"
                                 >
                                     <option value="" disabled className="bg-background text-foreground">Select...</option>
                                     <option value="ingreso" className="bg-background text-foreground">Ingreso</option>
@@ -248,7 +248,7 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
                                     required
                                     value={formData.cuenta}
                                     onChange={(e) => setFormData({ ...formData, cuenta: e.target.value })}
-                                    className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm focus-[1px]:outline-none focus:ring-1 focus:ring-ring"
+                                    className="flex h-10 w-full rounded-md border border-input bg-background text-foreground px-3 py-2 text-sm focus-[1px]:outline-none focus:ring-1 focus:ring-ring"
                                 >
                                     <option value="" disabled className="bg-background text-foreground">Select...</option>
                                     {cuentasDB.map((c) => (

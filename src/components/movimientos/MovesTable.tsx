@@ -181,7 +181,7 @@ export default function MovesTable() {
                     <div className="space-y-1">
                         <span className="text-sm font-medium text-foreground">Tipo de movimiento</span>
                         <select
-                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                            className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm"
                             value={filters.movimiento}
                             onChange={(e) => setFilters(f => ({ ...f, movimiento: e.target.value }))}
                         >
@@ -261,7 +261,7 @@ export default function MovesTable() {
                     <div className="space-y-1">
                         <span className="text-sm font-medium text-foreground">Cuenta</span>
                         <select
-                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                            className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm"
                             value={filters.cuenta}
                             onChange={(e) => setFilters(f => ({ ...f, cuenta: e.target.value }))}
                         >
@@ -289,7 +289,7 @@ export default function MovesTable() {
                     <div className="space-y-1">
                         <span className="text-sm font-medium text-foreground">Tipo de pago</span>
                         <select
-                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                            className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm"
                             value={filters.tipoPago}
                             onChange={(e) => setFilters(f => ({ ...f, tipoPago: e.target.value }))}
                         >
@@ -388,7 +388,7 @@ export default function MovesTable() {
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-foreground">Mostrar:</span>
                     <select
-                        className="h-8 rounded-md border border-input bg-transparent px-2 py-1 text-sm shadow-sm"
+                        className="h-8 rounded-md border border-input bg-background text-foreground px-2 py-1 text-sm shadow-sm"
                         value={limit}
                         onChange={(e) => {
                             setLimit(Number(e.target.value));
