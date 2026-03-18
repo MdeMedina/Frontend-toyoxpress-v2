@@ -46,7 +46,7 @@ export function Sidebar() {
 
     return (
         <div className="flex h-full w-64 flex-col bg-card border-r border-border shadow-sm">
-            <div className="flex h-16 items-center flex-shrink-0 px-6 bg-primary text-primary-foreground">
+            <div className="flex h-16 items-center justify-center flex-shrink-0 px-6 bg-primary text-primary-foreground">
                 <img
                     src={`${BASE_URL}/assets/toyoxpress-logo.png`}
                     alt="ToyoXpress"
