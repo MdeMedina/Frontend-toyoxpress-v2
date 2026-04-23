@@ -189,7 +189,7 @@ export default function UserModal({ isOpen, onClose, onSuccess, userToEdit }: Us
         },
         {
             title: "Módulo de Usuarios",
-            keys: ["crearUsuarios", "modificarUsuarios", "eliminarUsuarios"]
+            keys: ["crearUsuarios", "modificarUsuarios", "eliminarUsuarios", "verPedidos"]
         },
         {
             title: "Horarios y Accesos",
@@ -197,7 +197,7 @@ export default function UserModal({ isOpen, onClose, onSuccess, userToEdit }: Us
         },
         {
             title: "Configuración y Generales",
-            keys: ["configurarCuentas", "consultarPrecios", "verClientes", "verExcel", "cargarProductos", "verPedidos"]
+            keys: ["configurarCuentas", "consultarPrecios", "verClientes", "verExcel", "cargarProductos"]
         }
     ];
 
