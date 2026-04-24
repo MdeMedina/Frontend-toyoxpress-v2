@@ -193,16 +193,24 @@ export function VentaForm({ onSuccess }: Props) {
             updated[yaExiste].total = updated[yaExiste].cantidad * updated[yaExiste].precio;
             setCarrito(updated);
         } else {
-            setCarrito(prev => [...prev, {
-                codigo: p.sku,
-                nombre: p.name,
-                marca: p.brands || p.Marca,
-                referencia: p.Ref,
-                cantidad: 1,
-                precio,
-                total: precio,
-                stockMax: stock,
-            }]);
+            setCarrito(prev => {
+                const newCart = [...prev, {
+                    codigo: p.sku,
+                    nombre: p.name,
+                    marca: p.brands || p.Marca,
+                    referencia: p.Ref,
+                    cantidad: 1,
+                    precio,
+                    total: precio,
+                    stockMax: stock,
+                }];
+                // Ordenar alfabéticamente por referencia como en la V1
+                return newCart.sort((a, b) => {
+                    const rA = String(a.referencia || '');
+                    const rB = String(b.referencia || '');
+                    return rA < rB ? -1 : (rA > rB ? 1 : 0);
+                });
+            });
         }
         setProductoQuery("");
         setProductoResults([]);
