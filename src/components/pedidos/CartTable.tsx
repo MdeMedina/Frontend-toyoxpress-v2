@@ -44,7 +44,7 @@ export function CartTable({ lineas, onCantidadChange, onRemove }: Props) {
                             <th className="px-3 py-2.5 text-left w-28">Código</th>
                             <th className="px-3 py-2.5 text-left">Descripción</th>
                             <th className="px-3 py-2.5 text-left w-24">Referencia</th>
-                            <th className="px-3 py-2.5 text-left w-24 border-r border-border/50">Marca</th>
+                            <th className="px-3 py-2.5 text-left w-24 border-r border-border/50">Modelo</th>
                             <th className="px-3 py-2.5 text-center w-24 border-r border-border/50">Stock Disp.</th>
                             <th className="px-3 py-2.5 text-center w-24">Cantidad</th>
                             {consultarPrecios && <th className="px-3 py-2.5 text-right w-24">P.U.</th>}
