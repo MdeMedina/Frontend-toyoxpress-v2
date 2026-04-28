@@ -202,7 +202,7 @@ export function SyncDashboard() {
                                                 <h4 className="font-semibold text-[11px] flex items-center gap-2">
                                                     Paquete #{chunk.chunkIndex}
                                                     <span className="text-[9px] text-muted-foreground">
-                                                        {(chunk.createdDetails?.length || 0) + (chunk.updatedDetails?.length || 0) + (chunk.failedDetails?.length || 0)} SKUs
+                                                    {(chunk.createdDetails?.length || 0) + (chunk.updatedDetails?.length || 0) + (chunk.failedDetails?.length || 0)} SKUs
                                                     </span>
                                                 </h4>
                                                 {chunk.createdDetails?.length > 0 && (
@@ -248,7 +248,9 @@ export function SyncDashboard() {
         );
     }
 
-    const porcentaje = Math.round((syncData.chunksProcessed / syncData.totalChunks) * 100);
+    const chunksProcessed = syncData?.chunksProcessed || 0;
+    const totalChunks = syncData?.totalChunks || 1;
+    const porcentaje = Math.round((chunksProcessed / totalChunks) * 100);
     const isFinished = syncData.status === "completed";
 
     return (
@@ -285,7 +287,7 @@ export function SyncDashboard() {
             </div>
 
             <div className={isFinished ? "[&>div]:bg-emerald-500" : "[&>div]:bg-blue-500"}>
-                <Progress value={porcentaje} className="h-2 w-full bg-secondary" />
+                <Progress value={porcentaje || 0} className="h-2 w-full bg-secondary" />
             </div>
 
             {/* KPIs de WooCommerce */}
@@ -297,7 +299,7 @@ export function SyncDashboard() {
                     <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                         Act. Exitosos
                     </p>
-                    <p className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400">{syncData.metrics.updated}</p>
+                    <p className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400">{syncData?.metrics?.updated || 0}</p>
                 </div>
                 <div
                     onClick={() => setFilter(filter === 'created' ? 'all' : 'created')}
@@ -306,7 +308,7 @@ export function SyncDashboard() {
                     <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                         Nuevos Creados
                     </p>
-                    <p className="text-2xl font-semibold text-blue-600 dark:text-blue-400">{syncData.metrics.created}</p>
+                    <p className="text-2xl font-semibold text-blue-600 dark:text-blue-400">{syncData?.metrics?.created || 0}</p>
                 </div>
                 <div
                     onClick={() => setFilter(filter === 'failed' ? 'all' : 'failed')}
@@ -315,8 +317,8 @@ export function SyncDashboard() {
                     <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                         Rechazados (Fallos)
                     </p>
-                    <p className={`text-2xl font-semibold ${syncData.metrics.failed > 0 ? "text-destructive" : "text-foreground"}`}>
-                        {syncData.metrics.failed}
+                    <p className={`text-2xl font-semibold ${(syncData?.metrics?.failed || 0) > 0 ? "text-destructive" : "text-foreground"}`}>
+                        {syncData?.metrics?.failed || 0}
                     </p>
                 </div>
             </div>
@@ -344,33 +346,33 @@ export function SyncDashboard() {
                                     <h4 className="font-semibold text-sm flex items-center gap-2">
                                         Paquete #{chunk.chunkIndex}
                                         <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-600 border-blue-200">
-                                            {chunk.createdDetails.length + chunk.updatedDetails.length + chunk.failedDetails.length} SKUs procesados
+                                            {(chunk.createdDetails?.length || 0) + (chunk.updatedDetails?.length || 0) + (chunk.failedDetails?.length || 0)} SKUs procesados
                                         </Badge>
                                     </h4>
 
-                                    {(filter === 'all' || filter === 'created') && chunk.createdDetails.length > 0 && (
+                                    {(filter === 'all' || filter === 'created') && (chunk.createdDetails?.length || 0) > 0 && (
                                         <div className="text-xs space-y-1">
-                                            <p className="text-blue-600 font-medium">✨ Creados ({chunk.createdDetails.length}):</p>
+                                            <p className="text-blue-600 font-medium">✨ Creados ({chunk.createdDetails?.length || 0}):</p>
                                             <div className="flex flex-wrap gap-1">
-                                                {chunk.createdDetails.map((s, idx) => <span key={idx} className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">{s}</span>)}
+                                                {chunk.createdDetails?.map((s, idx) => <span key={idx} className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">{s}</span>)}
                                             </div>
                                         </div>
                                     )}
 
-                                    {(filter === 'all' || filter === 'updated') && chunk.updatedDetails.length > 0 && (
+                                    {(filter === 'all' || filter === 'updated') && (chunk.updatedDetails?.length || 0) > 0 && (
                                         <div className="text-xs space-y-1 mt-2">
-                                            <p className="text-emerald-600 font-medium">✅ Actualizados ({chunk.updatedDetails.length}):</p>
+                                            <p className="text-emerald-600 font-medium">✅ Actualizados ({chunk.updatedDetails?.length || 0}):</p>
                                             <div className="flex flex-wrap gap-1">
-                                                {chunk.updatedDetails.map((s, idx) => <span key={idx} className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">{s}</span>)}
+                                                {chunk.updatedDetails?.map((s, idx) => <span key={idx} className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">{s}</span>)}
                                             </div>
                                         </div>
                                     )}
 
-                                    {(filter === 'all' || filter === 'failed') && chunk.failedDetails.length > 0 && (
+                                    {(filter === 'all' || filter === 'failed') && (chunk.failedDetails?.length || 0) > 0 && (
                                         <div className="text-xs space-y-1 mt-2">
-                                            <p className="text-red-500 font-medium">❌ Rechazados ({chunk.failedDetails.length}):</p>
+                                            <p className="text-red-500 font-medium">❌ Rechazados ({chunk.failedDetails?.length || 0}):</p>
                                             <ul className="list-disc pl-4 text-red-500/80">
-                                                {chunk.failedDetails.map((s, idx) => <li key={idx}>{s}</li>)}
+                                                {chunk.failedDetails?.map((s, idx) => <li key={idx}>{s}</li>)}
                                             </ul>
                                         </div>
                                     )}
