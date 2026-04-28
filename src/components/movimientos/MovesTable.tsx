@@ -297,6 +297,7 @@ export default function MovesTable() {
                             <option value="bs">Bs</option>
                             <option value="zelle">Zelle</option>
                             <option value="efectivo">Efectivo</option>
+                            <option value="otro">Otro</option>
                         </select>
                     </div>
 
