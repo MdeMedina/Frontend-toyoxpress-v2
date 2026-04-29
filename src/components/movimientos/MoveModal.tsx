@@ -14,6 +14,13 @@ import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { api } from "@/lib/api";
 import Swal from 'sweetalert2';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 interface MoveModalProps {
     isOpen: boolean;
@@ -73,12 +80,18 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
                     formattedDate = move.fechaString;
                 }
 
+                // Retro-compatibilidad para movimientos antiguos V1 que solo tienen 'monto' sin desglose
+                let retroOtro = move.otro;
+                if (!move.efectivo && !move.zelle && !move.dolares && !move.bs && !move.otro && move.monto) {
+                    retroOtro = Math.abs(move.monto);
+                }
+
                 setFormData({
                     movimiento: move.movimiento || "ingreso",
                     cuenta: move.cuenta || "",
                     efectivo: move.efectivo ? move.efectivo.toString() : "",
                     zelle: move.zelle ? move.zelle.toString() : "",
-                    otro: move.otro ? move.otro.toString() : "",
+                    otro: retroOtro ? retroOtro.toString() : "",
                     valorEnDolares: move.dolares ? move.dolares.toString() : (move.bs > 0 && move.change > 0 ? (move.bs / move.change).toFixed(2) : ""),
                     valorDeCambio: move.change ? move.change.toString() : "",
                     cantidadDeBolivares: move.bs ? move.bs.toString() : "",
@@ -109,10 +122,9 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
         const numValorDolares = parseFloat(formData.valorEnDolares) || 0;
         const numValorCambio = parseFloat(formData.valorDeCambio) || 0;
         if (numValorDolares > 0 && numValorCambio > 0) {
-            setFormData(prev => ({ ...prev, cantidadDeBolivares: (numValorDolares * numValorCambio).toString() }));
-        } else if (parseFloat(formData.cantidadDeBolivares) > 0 && numValorCambio > 0 && !formData.valorEnDolares) {
-            // Reverse calculation not strictly needed unless user types backwards, but good to have
-            setFormData(prev => ({ ...prev, valorEnDolares: (parseFloat(formData.cantidadDeBolivares) / numValorCambio).toString() }));
+            setFormData(prev => ({ ...prev, cantidadDeBolivares: (numValorDolares * numValorCambio).toFixed(2) }));
+        } else {
+            setFormData(prev => ({ ...prev, cantidadDeBolivares: "" }));
         }
     }, [formData.valorEnDolares, formData.valorDeCambio]);
 
@@ -122,13 +134,11 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
         const effectivo = parseFloat(formData.efectivo) || 0;
         const zelle = parseFloat(formData.zelle) || 0;
         const otro = parseFloat(formData.otro) || 0;
-        const valorBolivaresEnDolares = parseFloat(formData.cantidadDeBolivares) > 0 && parseFloat(formData.valorDeCambio) > 0
-            ? parseFloat(formData.cantidadDeBolivares) / parseFloat(formData.valorDeCambio)
-            : (parseFloat(formData.valorEnDolares) || 0);
+        const valorDolares = parseFloat(formData.valorEnDolares) || 0;
 
-        const sum = effectivo + zelle + otro + valorBolivaresEnDolares;
+        const sum = effectivo + zelle + otro + valorDolares;
         setFormData(prev => ({ ...prev, total: sum.toFixed(2) }));
-    }, [formData.efectivo, formData.zelle, formData.otro, formData.valorEnDolares, formData.cantidadDeBolivares, formData.valorDeCambio]);
+    }, [formData.efectivo, formData.zelle, formData.otro, formData.valorEnDolares]);
 
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -145,8 +155,8 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
             const numDolares = parseFloat(formData.valorEnDolares) || 0;
 
             const payload = {
-                usuario: user || "Admin",
-                id_usuario: id_usuario || "123",
+                usuario: (move && move.usuario) ? move.usuario : (user || "Admin"),
+                id_usuario: (move && move.id_usuario) ? move.id_usuario : (id_usuario || "123"),
                 cuenta: formData.cuenta,
                 movimiento: formData.movimiento,
                 concepto: formData.concepto,
@@ -207,9 +217,10 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
             })
 
             onSuccess();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error saving movement", error);
-            alert("Error guardando el movimiento.");
+            const msg = error.response?.data?.message || "Error guardando el movimiento.";
+            alert(msg);
         } finally {
             setLoading(false);
         }
@@ -230,31 +241,35 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
                         <div className="space-y-4">
                             <div className="space-y-1 text-sm">
                                 <Label className="text-foreground font-normal">Tipo de Movimiento:</Label>
-                                <select
-                                    required
+                                <Select
                                     value={formData.movimiento}
-                                    onChange={(e) => setFormData({ ...formData, movimiento: e.target.value })}
-                                    className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm focus-[1px]:outline-none focus:ring-1 focus:ring-ring"
+                                    onValueChange={(val) => setFormData({ ...formData, movimiento: val })}
                                 >
-                                    <option value="" disabled className="bg-background text-foreground">Select...</option>
-                                    <option value="ingreso" className="bg-background text-foreground">Ingreso</option>
-                                    <option value="egreso" className="bg-background text-foreground">Egreso</option>
-                                </select>
+                                    <SelectTrigger className="h-10 w-full bg-background border-input">
+                                        <SelectValue placeholder="Select..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="ingreso">Ingreso</SelectItem>
+                                        <SelectItem value="egreso">Egreso</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             <div className="space-y-1 text-sm">
                                 <Label className="text-foreground font-normal">Cuenta Afectada:</Label>
-                                <select
-                                    required
+                                <Select
                                     value={formData.cuenta}
-                                    onChange={(e) => setFormData({ ...formData, cuenta: e.target.value })}
-                                    className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm focus-[1px]:outline-none focus:ring-1 focus:ring-ring"
+                                    onValueChange={(val) => setFormData({ ...formData, cuenta: val })}
                                 >
-                                    <option value="" disabled className="bg-background text-foreground">Select...</option>
-                                    {cuentasDB.map((c) => (
-                                        <option key={c.value} value={c.value} className="bg-background text-foreground">{c.label}</option>
-                                    ))}
-                                </select>
+                                    <SelectTrigger className="h-10 w-full bg-background border-input">
+                                        <SelectValue placeholder="Select..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {cuentasDB.map((c) => (
+                                            <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
 
@@ -271,7 +286,7 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
                                             type="number" step="0.01" min="0"
                                             value={formData.efectivo}
                                             onChange={(e) => setFormData({ ...formData, efectivo: e.target.value })}
-                                            className="w-full pr-8 h-10"
+                                            className="w-full pr-8 h-10 no-spinner"
                                         />
                                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">$</span>
                                     </div>
@@ -283,7 +298,7 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
                                             type="number" step="0.01" min="0"
                                             value={formData.zelle}
                                             onChange={(e) => setFormData({ ...formData, zelle: e.target.value })}
-                                            className="w-full pr-8 h-10"
+                                            className="w-full pr-8 h-10 no-spinner"
                                         />
                                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">$</span>
                                     </div>
@@ -295,7 +310,7 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
                                             type="number" step="0.01" min="0"
                                             value={formData.otro}
                                             onChange={(e) => setFormData({ ...formData, otro: e.target.value })}
-                                            className="w-full pr-8 h-10"
+                                            className="w-full pr-8 h-10 no-spinner"
                                         />
                                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">$</span>
                                     </div>
@@ -306,39 +321,39 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
                             <div className="space-y-1 pt-2">
                                 <Label className="text-muted-foreground font-normal text-xs">Bolivares:</Label>
                                 <div className="grid grid-cols-3 gap-6">
-                                    <div className="relative flex items-center">
-                                        <span className="text-sm text-foreground mr-2 whitespace-nowrap">Valor en dolares:</span>
-                                        <div className="relative w-full">
+                                    <div className="space-y-1">
+                                        <Label className="text-foreground font-normal text-xs">Valor en dolares:</Label>
+                                        <div className="relative">
                                             <Input
                                                 type="number" step="0.01" min="0"
                                                 value={formData.valorEnDolares}
                                                 onChange={(e) => setFormData({ ...formData, valorEnDolares: e.target.value })}
-                                                className="w-full pr-8 h-10"
+                                                className="w-full pr-8 h-10 no-spinner"
                                             />
                                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">$</span>
                                         </div>
                                     </div>
-                                    <div className="relative flex items-center">
-                                        <span className="text-sm text-foreground mr-2 whitespace-nowrap">Valor de cambio:</span>
-                                        <div className="relative w-full">
+                                    <div className="space-y-1">
+                                        <Label className="text-foreground font-normal text-xs">Valor de cambio:</Label>
+                                        <div className="relative">
                                             <Input
                                                 type="number" step="0.01" min="0"
                                                 disabled={!formData.valorEnDolares || parseFloat(formData.valorEnDolares) <= 0}
                                                 value={formData.valorDeCambio}
                                                 onChange={(e) => setFormData({ ...formData, valorDeCambio: e.target.value })}
-                                                className={`w-full pr-8 h-10 ${(!formData.valorEnDolares || parseFloat(formData.valorEnDolares) <= 0) ? 'bg-gray-100 cursor-not-allowed opacity-70' : ''}`}
+                                                className={`w-full pr-8 h-10 no-spinner ${(!formData.valorEnDolares || parseFloat(formData.valorEnDolares) <= 0) ? 'bg-gray-100 cursor-not-allowed opacity-70' : ''}`}
                                             />
                                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">Bs</span>
                                         </div>
                                     </div>
-                                    <div className="relative flex items-center">
-                                        <span className="text-sm text-foreground mr-2 whitespace-nowrap leading-tight">Cantidad de<br />bolivares:</span>
-                                        <div className="relative w-full">
+                                    <div className="space-y-1">
+                                        <Label className="text-foreground font-normal text-xs leading-tight">Cantidad de bolivares:</Label>
+                                        <div className="relative">
                                             <Input
                                                 type="number" step="0.01" min="0"
                                                 readOnly
                                                 value={formData.cantidadDeBolivares}
-                                                className="w-full pr-8 h-10 bg-gray-50 text-gray-600 font-medium cursor-default focus-visible:ring-0"
+                                                className="w-full pr-8 h-10 bg-gray-50 text-gray-600 font-medium cursor-default focus-visible:ring-0 no-spinner"
                                             />
                                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">Bs</span>
                                         </div>
@@ -348,16 +363,37 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
 
                             {/* Total Row */}
                             <div className="pt-4 pb-2">
-                                <div className="w-1/3 space-y-1">
-                                    <Label className="text-muted-foreground font-normal text-xs">Total:</Label>
-                                    <div className="relative">
-                                        <Input
-                                            disabled
-                                            value={formData.total}
-                                            className="w-full pr-8 h-10 font-bold bg-transparent"
-                                        />
-                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">$</span>
+                                <div className="grid grid-cols-3 gap-6 items-end">
+                                    <div className="space-y-1">
+                                        <Label className="text-muted-foreground font-normal text-xs">Total:</Label>
+                                        <div className="relative">
+                                            <Input
+                                                disabled
+                                                value={formData.total}
+                                                className="w-full pr-8 h-12 text-lg font-bold bg-muted/20 border-none no-spinner"
+                                            />
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-lg">$</span>
+                                        </div>
                                     </div>
+
+                                    {move && (
+                                        <>
+                                            <div className="space-y-1">
+                                                <Label className="text-muted-foreground font-normal text-xs">Creado por:</Label>
+                                                <div className="text-[10px] leading-tight text-foreground/80 bg-muted/30 p-2 rounded-md border border-border/50 h-12 flex flex-col justify-center">
+                                                    <p className="font-semibold truncate">{move.usuario || move.name || '—'}</p>
+                                                    <p className="opacity-70">{move.creado ? new Date(move.creado).toLocaleString() : (move.createdAt ? new Date(move.createdAt).toLocaleString() : '—')}</p>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-muted-foreground font-normal text-xs">Modificado por:</Label>
+                                                <div className="text-[10px] leading-tight text-foreground/80 bg-muted/30 p-2 rounded-md border border-border/50 h-12 flex flex-col justify-center">
+                                                    <p className="font-semibold truncate">{move.usuario_modifico || '—'}</p>
+                                                    <p className="opacity-70">{move.usuario_modifico ? new Date(move.updatedAt).toLocaleString() : '—'}</p>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>

@@ -8,6 +8,7 @@ interface Linea {
     codigo: string;
     nombre: string;
     marca?: string;
+    modelo?: string;
     referencia?: string;
     cantidad: number | '';
     precio: number;
@@ -37,14 +38,14 @@ export function CartTable({ lineas, onCantidadChange, onRemove }: Props) {
 
     return (
         <div className="space-y-2">
-            <div className="rounded-xl border border-border overflow-hidden">
-                <table className="w-full text-sm">
+            <div className="rounded-xl border border-border overflow-x-auto">
+                <table className="w-full text-sm min-w-[700px]">
                     <thead className="bg-muted/50">
                         <tr className="text-xs text-muted-foreground uppercase tracking-wider">
                             <th className="px-3 py-2.5 text-left w-28">Código</th>
                             <th className="px-3 py-2.5 text-left">Descripción</th>
                             <th className="px-3 py-2.5 text-left w-24">Referencia</th>
-                            <th className="px-3 py-2.5 text-left w-24 border-r border-border/50">Marca</th>
+                            <th className="px-3 py-2.5 text-left w-24 border-r border-border/50">Modelo</th>
                             <th className="px-3 py-2.5 text-center w-24 border-r border-border/50">Stock Disp.</th>
                             <th className="px-3 py-2.5 text-center w-24">Cantidad</th>
                             {consultarPrecios && <th className="px-3 py-2.5 text-right w-24">P.U.</th>}
@@ -58,7 +59,7 @@ export function CartTable({ lineas, onCantidadChange, onRemove }: Props) {
                                 <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{l.codigo}</td>
                                 <td className="px-3 py-2 font-medium text-foreground">{l.nombre}</td>
                                 <td className="px-3 py-2 text-muted-foreground text-xs">{l.referencia || "—"}</td>
-                                <td className="px-3 py-2 text-muted-foreground text-xs border-r border-border/50">{l.marca || "—"}</td>
+                                <td className="px-3 py-2 text-muted-foreground text-xs border-r border-border/50">{l.modelo || "—"}</td>
                                 <td className="px-3 py-2 text-center">
                                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${Number(l.stockMax) > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
                                         {l.stockMax ?? "—"}

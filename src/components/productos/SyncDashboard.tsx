@@ -19,9 +19,9 @@ interface SyncMetrics {
 
 interface ChunkDetail {
     chunkIndex: number;
-    created: string[];
-    updated: string[];
-    failed: string[];
+    createdDetails: string[];
+    updatedDetails: string[];
+    failedDetails: string[];
 }
 
 interface SyncProgressData {
@@ -45,6 +45,7 @@ interface LastSyncJob {
     chunksProcessed: number;
     status: string;
     metrics: SyncMetrics;
+    details?: ChunkDetail[];
     updatedAt: string;
 }
 
@@ -55,6 +56,7 @@ export function SyncDashboard() {
     const [logs, setLogs] = useState<string[]>([]);
     const [filter, setFilter] = useState<'all' | 'created' | 'updated' | 'failed'>('all');
     const [lastSync, setLastSync] = useState<LastSyncJob | null>(null);
+    const [showHistory, setShowHistory] = useState(false);
     const token = useAuthStore((state: any) => state.token);
 
     useEffect(() => {
@@ -148,15 +150,23 @@ export function SyncDashboard() {
                         <Clock className="h-4 w-4" />
                         <span className="text-xs font-medium uppercase tracking-wide">Última Sincronización</span>
                     </div>
-                    <div className="bg-muted/40 rounded-xl border border-border p-4 space-y-3">
+                    <div
+                        onClick={() => setShowHistory(!showHistory)}
+                        className="bg-muted/40 rounded-xl border border-border p-4 space-y-3 cursor-pointer hover:bg-muted/60 transition-all hover:shadow-md group"
+                    >
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-semibold text-foreground truncate max-w-[200px]">{lastSync.fileName}</p>
                                 <p className="text-xs text-muted-foreground mt-0.5">{lastDate}</p>
                             </div>
-                            <Badge variant={lastSync.status === 'completed' ? 'default' : 'destructive'} className={lastSync.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : ''}>
-                                {lastSync.status === 'completed' ? '✅ Completado' : lastSync.status}
-                            </Badge>
+                            <div className="flex flex-col items-end gap-1">
+                                <Badge variant={lastSync.status === 'completed' ? 'default' : 'destructive'} className={lastSync.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : ''}>
+                                    {lastSync.status === 'completed' ? '✅ Completado' : lastSync.status}
+                                </Badge>
+                                <span className="text-[10px] text-primary font-medium group-hover:underline">
+                                    {showHistory ? "Ocultar detalles" : "Click para ver detalles"}
+                                </span>
+                            </div>
                         </div>
 
                         <div className="pt-1">
@@ -181,6 +191,46 @@ export function SyncDashboard() {
                                 <p className="text-[10px] text-muted-foreground">Fallidos</p>
                             </div>
                         </div>
+
+                        {showHistory && lastSync.details && (
+                            <div className="mt-4 pt-4 border-t border-border/50 animate-in slide-in-from-top duration-300">
+                                <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2">Desglose Histórico</p>
+                                <ScrollArea className="h-[250px] w-full rounded-md bg-background/50 p-2">
+                                    <div className="flex flex-col gap-3">
+                                        {lastSync.details.map((chunk: any, i) => (
+                                            <div key={i} className="bg-muted/30 border border-border/50 rounded-lg p-2 space-y-1.5">
+                                                <h4 className="font-semibold text-[11px] flex items-center gap-2">
+                                                    Paquete #{chunk.chunkIndex}
+                                                    <span className="text-[9px] text-muted-foreground">
+                                                    {(chunk.createdDetails?.length || 0) + (chunk.updatedDetails?.length || 0) + (chunk.failedDetails?.length || 0)} SKUs
+                                                    </span>
+                                                </h4>
+                                                {chunk.createdDetails?.length > 0 && (
+                                                    <div className="text-[10px] space-y-0.5">
+                                                        <p className="text-blue-600 font-bold">Creados:</p>
+                                                        <p className="text-muted-foreground line-clamp-2">{chunk.createdDetails.join(", ")}</p>
+                                                    </div>
+                                                )}
+                                                {chunk.updatedDetails?.length > 0 && (
+                                                    <div className="text-[10px] space-y-0.5">
+                                                        <p className="text-emerald-600 font-bold">Actualizados:</p>
+                                                        <p className="text-muted-foreground line-clamp-2">{chunk.updatedDetails.join(", ")}</p>
+                                                    </div>
+                                                )}
+                                                {chunk.failedDetails?.length > 0 && (
+                                                    <div className="text-[10px] space-y-0.5">
+                                                        <p className="text-red-500 font-bold">Fallidos:</p>
+                                                        <ul className="list-disc pl-3 text-red-400">
+                                                            {chunk.failedDetails.map((f: string, idx: number) => <li key={idx}>{f}</li>)}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </ScrollArea>
+                            </div>
+                        )}
                     </div>
                     <p className="text-center text-xs text-muted-foreground">Sube un nuevo Excel para iniciar otra sincronización.</p>
                 </div>
@@ -198,7 +248,9 @@ export function SyncDashboard() {
         );
     }
 
-    const porcentaje = Math.round((syncData.chunksProcessed / syncData.totalChunks) * 100);
+    const chunksProcessed = syncData?.chunksProcessed || 0;
+    const totalChunks = syncData?.totalChunks || 1;
+    const porcentaje = Math.round((chunksProcessed / totalChunks) * 100);
     const isFinished = syncData.status === "completed";
 
     return (
@@ -212,7 +264,7 @@ export function SyncDashboard() {
                         <div className="flex flex-col ml-1 justify-end pb-1">
                             {syncData.totalSKUs ? (
                                 <span className="text-sm font-semibold text-foreground mb-0.5">
-                                    {(syncData.metrics.created + syncData.metrics.updated + syncData.metrics.failed)} de {syncData.totalSKUs} Productos
+                                    {((syncData?.metrics?.created || 0) + (syncData?.metrics?.updated || 0) + (syncData?.metrics?.failed || 0))} de {syncData.totalSKUs} Productos
                                 </span>
                             ) : null}
                             <span className="text-xs text-muted-foreground">
@@ -235,7 +287,7 @@ export function SyncDashboard() {
             </div>
 
             <div className={isFinished ? "[&>div]:bg-emerald-500" : "[&>div]:bg-blue-500"}>
-                <Progress value={porcentaje} className="h-2 w-full bg-secondary" />
+                <Progress value={porcentaje || 0} className="h-2 w-full bg-secondary" />
             </div>
 
             {/* KPIs de WooCommerce */}
@@ -247,7 +299,7 @@ export function SyncDashboard() {
                     <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                         Act. Exitosos
                     </p>
-                    <p className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400">{syncData.metrics.updated}</p>
+                    <p className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400">{syncData?.metrics?.updated || 0}</p>
                 </div>
                 <div
                     onClick={() => setFilter(filter === 'created' ? 'all' : 'created')}
@@ -256,7 +308,7 @@ export function SyncDashboard() {
                     <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                         Nuevos Creados
                     </p>
-                    <p className="text-2xl font-semibold text-blue-600 dark:text-blue-400">{syncData.metrics.created}</p>
+                    <p className="text-2xl font-semibold text-blue-600 dark:text-blue-400">{syncData?.metrics?.created || 0}</p>
                 </div>
                 <div
                     onClick={() => setFilter(filter === 'failed' ? 'all' : 'failed')}
@@ -265,13 +317,13 @@ export function SyncDashboard() {
                     <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                         Rechazados (Fallos)
                     </p>
-                    <p className={`text-2xl font-semibold ${syncData.metrics.failed > 0 ? "text-destructive" : "text-foreground"}`}>
-                        {syncData.metrics.failed}
+                    <p className={`text-2xl font-semibold ${(syncData?.metrics?.failed || 0) > 0 ? "text-destructive" : "text-foreground"}`}>
+                        {syncData?.metrics?.failed || 0}
                     </p>
                 </div>
             </div>
 
-            {syncData.metrics.failed > 0 && !isFinished && (
+            {(syncData?.metrics?.failed || 0) > 0 && !isFinished && (
                 <Alert variant="destructive" className="animate-pulse">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Advertencia en WooCommerce</AlertTitle>
@@ -294,33 +346,33 @@ export function SyncDashboard() {
                                     <h4 className="font-semibold text-sm flex items-center gap-2">
                                         Paquete #{chunk.chunkIndex}
                                         <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-600 border-blue-200">
-                                            {chunk.created.length + chunk.updated.length + chunk.failed.length} SKUs procesados
+                                            {(chunk.createdDetails?.length || 0) + (chunk.updatedDetails?.length || 0) + (chunk.failedDetails?.length || 0)} SKUs procesados
                                         </Badge>
                                     </h4>
 
-                                    {(filter === 'all' || filter === 'created') && chunk.created.length > 0 && (
+                                    {(filter === 'all' || filter === 'created') && (chunk.createdDetails?.length || 0) > 0 && (
                                         <div className="text-xs space-y-1">
-                                            <p className="text-blue-600 font-medium">✨ Creados ({chunk.created.length}):</p>
+                                            <p className="text-blue-600 font-medium">✨ Creados ({chunk.createdDetails?.length || 0}):</p>
                                             <div className="flex flex-wrap gap-1">
-                                                {chunk.created.map((s, idx) => <span key={idx} className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">{s}</span>)}
+                                                {chunk.createdDetails?.map((s, idx) => <span key={idx} className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">{s}</span>)}
                                             </div>
                                         </div>
                                     )}
 
-                                    {(filter === 'all' || filter === 'updated') && chunk.updated.length > 0 && (
+                                    {(filter === 'all' || filter === 'updated') && (chunk.updatedDetails?.length || 0) > 0 && (
                                         <div className="text-xs space-y-1 mt-2">
-                                            <p className="text-emerald-600 font-medium">✅ Actualizados ({chunk.updated.length}):</p>
+                                            <p className="text-emerald-600 font-medium">✅ Actualizados ({chunk.updatedDetails?.length || 0}):</p>
                                             <div className="flex flex-wrap gap-1">
-                                                {chunk.updated.map((s, idx) => <span key={idx} className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">{s}</span>)}
+                                                {chunk.updatedDetails?.map((s, idx) => <span key={idx} className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">{s}</span>)}
                                             </div>
                                         </div>
                                     )}
 
-                                    {(filter === 'all' || filter === 'failed') && chunk.failed.length > 0 && (
+                                    {(filter === 'all' || filter === 'failed') && (chunk.failedDetails?.length || 0) > 0 && (
                                         <div className="text-xs space-y-1 mt-2">
-                                            <p className="text-red-500 font-medium">❌ Rechazados ({chunk.failed.length}):</p>
+                                            <p className="text-red-500 font-medium">❌ Rechazados ({chunk.failedDetails?.length || 0}):</p>
                                             <ul className="list-disc pl-4 text-red-500/80">
-                                                {chunk.failed.map((s, idx) => <li key={idx}>{s}</li>)}
+                                                {chunk.failedDetails?.map((s, idx) => <li key={idx}>{s}</li>)}
                                             </ul>
                                         </div>
                                     )}
