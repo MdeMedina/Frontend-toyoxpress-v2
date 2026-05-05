@@ -386,7 +386,7 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
                                                 </div>
                                             </div>
                                             <div className="space-y-1">
-                                                <Label className="text-muted-foreground font-normal text-xs">Modificado por:</Label>
+                                                <Label className="text-muted-foreground font-normal text-xs">Editado por:</Label>
                                                 <div className="text-[10px] leading-tight text-foreground/80 bg-muted/30 p-2 rounded-md border border-border/50 h-12 flex flex-col justify-center">
                                                     <p className="font-semibold truncate">{move.usuario_modifico || '—'}</p>
                                                     <p className="opacity-70">{move.usuario_modifico ? new Date(move.updatedAt).toLocaleString() : '—'}</p>
