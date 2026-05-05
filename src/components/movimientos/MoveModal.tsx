@@ -387,6 +387,25 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
                                         />
                                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">$</span>
                                     </div>
+
+                                    {move && (
+                                        <>
+                                            <div className="space-y-1">
+                                                <Label className="text-muted-foreground font-normal text-xs">Creado por:</Label>
+                                                <div className="text-[10px] leading-tight text-foreground/80 bg-muted/30 p-2 rounded-md border border-border/50 h-12 flex flex-col justify-center">
+                                                    <p className="font-semibold truncate">{move.usuario || move.name || '—'}</p>
+                                                    <p className="opacity-70">{move.creado ? new Date(move.creado).toLocaleString() : (move.createdAt ? new Date(move.createdAt).toLocaleString() : '—')}</p>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-muted-foreground font-normal text-xs">Editado por:</Label>
+                                                <div className="text-[10px] leading-tight text-foreground/80 bg-muted/30 p-2 rounded-md border border-border/50 h-12 flex flex-col justify-center">
+                                                    <p className="font-semibold truncate">{move.usuario_modifico || '—'}</p>
+                                                    <p className="opacity-70">{move.usuario_modifico ? new Date(move.updatedAt).toLocaleString() : '—'}</p>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
