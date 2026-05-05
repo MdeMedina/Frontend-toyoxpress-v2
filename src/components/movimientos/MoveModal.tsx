@@ -80,24 +80,22 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
                     formattedDate = move.fechaString;
                 }
 
-                const numEfectivo = move.efectivo || 0;
-                const numZelle = move.zelle || 0;
-                const numOtro = move.otro || 0;
-                const numMonto = move.monto || 0;
-
-                // Si no tiene el campo dolares (V1), intentamos deducirlo del monto total menos otros pagos
-                const inferredDolares = move.dolares || (numMonto - (numEfectivo + numZelle + numOtro));
+                // Retro-compatibilidad para movimientos antiguos V1 que solo tienen 'monto' sin desglose
+                let retroOtro = move.otro;
+                if (!move.efectivo && !move.zelle && !move.dolares && !move.bs && !move.otro && move.monto) {
+                    retroOtro = Math.abs(move.monto);
+                }
 
                 setFormData({
                     movimiento: move.movimiento || "ingreso",
                     cuenta: move.cuenta || "",
-                    efectivo: numEfectivo ? numEfectivo.toString() : "",
-                    zelle: numZelle ? numZelle.toString() : "",
-                    otro: numOtro ? numOtro.toString() : "",
-                    valorEnDolares: inferredDolares ? inferredDolares.toFixed(2) : "",
+                    efectivo: move.efectivo ? move.efectivo.toString() : "",
+                    zelle: move.zelle ? move.zelle.toString() : "",
+                    otro: retroOtro ? retroOtro.toString() : "",
+                    valorEnDolares: move.dolares ? move.dolares.toString() : (move.bs > 0 && move.change > 0 ? (move.bs / move.change).toFixed(2) : ""),
                     valorDeCambio: move.change ? move.change.toString() : "",
                     cantidadDeBolivares: move.bs ? move.bs.toString() : "",
-                    total: numMonto ? Math.abs(numMonto).toString() : "0.00",
+                    total: move.monto ? Math.abs(move.monto).toString() : "0.00",
                     concepto: move.concepto || "",
                     fecha: formattedDate
                 });
@@ -124,17 +122,9 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
         const numValorDolares = parseFloat(formData.valorEnDolares) || 0;
         const numValorCambio = parseFloat(formData.valorDeCambio) || 0;
         if (numValorDolares > 0 && numValorCambio > 0) {
-            // Calculate Bolivares from Dollars
-            const calculatedBs = (numValorDolares * numValorCambio).toFixed(2);
-            if (formData.cantidadDeBolivares !== calculatedBs) {
-                setFormData(prev => ({ ...prev, cantidadDeBolivares: calculatedBs }));
-            }
-        } else if (parseFloat(formData.cantidadDeBolivares) > 0 && numValorCambio > 0 && !formData.valorEnDolares) {
-            // Reverse calculation: Calculate Dollars from Bolivares
-            const calculatedDolares = (parseFloat(formData.cantidadDeBolivares) / numValorCambio).toFixed(2);
-            if (formData.valorEnDolares !== calculatedDolares) {
-                setFormData(prev => ({ ...prev, valorEnDolares: calculatedDolares }));
-            }
+            setFormData(prev => ({ ...prev, cantidadDeBolivares: (numValorDolares * numValorCambio).toFixed(2) }));
+        } else {
+            setFormData(prev => ({ ...prev, cantidadDeBolivares: "" }));
         }
     }, [formData.valorEnDolares, formData.valorDeCambio]);
 
@@ -144,16 +134,11 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
         const effectivo = parseFloat(formData.efectivo) || 0;
         const zelle = parseFloat(formData.zelle) || 0;
         const otro = parseFloat(formData.otro) || 0;
-        // PREFER direct dollar input over calculated division to avoid precision issues
-        const valorBolivaresEnDolares = (parseFloat(formData.valorEnDolares) || 0) > 0
-            ? parseFloat(formData.valorEnDolares)
-            : (parseFloat(formData.cantidadDeBolivares) > 0 && parseFloat(formData.valorDeCambio) > 0
-                ? parseFloat(formData.cantidadDeBolivares) / parseFloat(formData.valorDeCambio)
-                : 0);
+        const valorDolares = parseFloat(formData.valorEnDolares) || 0;
 
-        const sum = effectivo + zelle + otro + valorBolivaresEnDolares;
+        const sum = effectivo + zelle + otro + valorDolares;
         setFormData(prev => ({ ...prev, total: sum.toFixed(2) }));
-    }, [formData.efectivo, formData.zelle, formData.otro, formData.valorEnDolares, formData.cantidadDeBolivares, formData.valorDeCambio]);
+    }, [formData.efectivo, formData.zelle, formData.otro, formData.valorEnDolares]);
 
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -170,8 +155,8 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
             const numDolares = parseFloat(formData.valorEnDolares) || 0;
 
             const payload = {
-                usuario: user || "Admin",
-                id_usuario: id_usuario || "123",
+                usuario: (move && move.usuario) ? move.usuario : (user || "Admin"),
+                id_usuario: (move && move.id_usuario) ? move.id_usuario : (id_usuario || "123"),
                 cuenta: formData.cuenta,
                 movimiento: formData.movimiento,
                 concepto: formData.concepto,
@@ -232,9 +217,10 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
             })
 
             onSuccess();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error saving movement", error);
-            alert("Error guardando el movimiento.");
+            const msg = error.response?.data?.message || "Error guardando el movimiento.";
+            alert(msg);
         } finally {
             setLoading(false);
         }
@@ -300,7 +286,7 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
                                             type="number" step="0.01" min="0"
                                             value={formData.efectivo}
                                             onChange={(e) => setFormData({ ...formData, efectivo: e.target.value })}
-                                            className="w-full pr-8 h-10"
+                                            className="w-full pr-8 h-10 no-spinner"
                                         />
                                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">$</span>
                                     </div>
@@ -312,7 +298,7 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
                                             type="number" step="0.01" min="0"
                                             value={formData.zelle}
                                             onChange={(e) => setFormData({ ...formData, zelle: e.target.value })}
-                                            className="w-full pr-8 h-10"
+                                            className="w-full pr-8 h-10 no-spinner"
                                         />
                                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">$</span>
                                     </div>
@@ -324,7 +310,7 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
                                             type="number" step="0.01" min="0"
                                             value={formData.otro}
                                             onChange={(e) => setFormData({ ...formData, otro: e.target.value })}
-                                            className="w-full pr-8 h-10"
+                                            className="w-full pr-8 h-10 no-spinner"
                                         />
                                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">$</span>
                                     </div>
@@ -335,39 +321,39 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
                             <div className="space-y-1 pt-2">
                                 <Label className="text-muted-foreground font-normal text-xs">Bolivares:</Label>
                                 <div className="grid grid-cols-3 gap-6">
-                                    <div className="relative flex items-center">
-                                        <span className="text-sm text-foreground mr-2 whitespace-nowrap">Valor en dolares:</span>
-                                        <div className="relative w-full">
+                                    <div className="space-y-1">
+                                        <Label className="text-foreground font-normal text-xs">Valor en dolares:</Label>
+                                        <div className="relative">
                                             <Input
                                                 type="number" step="0.01" min="0"
                                                 value={formData.valorEnDolares}
                                                 onChange={(e) => setFormData({ ...formData, valorEnDolares: e.target.value })}
-                                                className="w-full pr-8 h-10"
+                                                className="w-full pr-8 h-10 no-spinner"
                                             />
                                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">$</span>
                                         </div>
                                     </div>
-                                    <div className="relative flex items-center">
-                                        <span className="text-sm text-foreground mr-2 whitespace-nowrap">Valor de cambio:</span>
-                                        <div className="relative w-full">
+                                    <div className="space-y-1">
+                                        <Label className="text-foreground font-normal text-xs">Valor de cambio:</Label>
+                                        <div className="relative">
                                             <Input
                                                 type="number" step="0.01" min="0"
                                                 disabled={!formData.valorEnDolares || parseFloat(formData.valorEnDolares) <= 0}
                                                 value={formData.valorDeCambio}
                                                 onChange={(e) => setFormData({ ...formData, valorDeCambio: e.target.value })}
-                                                className={`w-full pr-8 h-10 ${(!formData.valorEnDolares || parseFloat(formData.valorEnDolares) <= 0) ? 'bg-gray-100 cursor-not-allowed opacity-70' : ''}`}
+                                                className={`w-full pr-8 h-10 no-spinner ${(!formData.valorEnDolares || parseFloat(formData.valorEnDolares) <= 0) ? 'bg-gray-100 cursor-not-allowed opacity-70' : ''}`}
                                             />
                                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">Bs</span>
                                         </div>
                                     </div>
-                                    <div className="relative flex items-center">
-                                        <span className="text-sm text-foreground mr-2 whitespace-nowrap leading-tight">Cantidad de<br />bolivares:</span>
-                                        <div className="relative w-full">
+                                    <div className="space-y-1">
+                                        <Label className="text-foreground font-normal text-xs leading-tight">Cantidad de bolivares:</Label>
+                                        <div className="relative">
                                             <Input
                                                 type="number" step="0.01" min="0"
                                                 readOnly
                                                 value={formData.cantidadDeBolivares}
-                                                className="w-full pr-8 h-10 bg-gray-50 text-gray-600 font-medium cursor-default focus-visible:ring-0"
+                                                className="w-full pr-8 h-10 bg-gray-50 text-gray-600 font-medium cursor-default focus-visible:ring-0 no-spinner"
                                             />
                                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">Bs</span>
                                         </div>
@@ -377,15 +363,17 @@ export default function MoveModal({ isOpen, onClose, onSuccess, move }: MoveModa
 
                             {/* Total Row */}
                             <div className="pt-4 pb-2">
-                                <div className="w-1/3 space-y-1">
-                                    <Label className="text-muted-foreground font-normal text-xs">Total:</Label>
-                                    <div className="relative">
-                                        <Input
-                                            disabled
-                                            value={formData.total}
-                                            className="w-full pr-8 h-10 font-bold bg-transparent"
-                                        />
-                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">$</span>
+                                <div className="grid grid-cols-3 gap-6 items-end">
+                                    <div className="space-y-1">
+                                        <Label className="text-muted-foreground font-normal text-xs">Total:</Label>
+                                        <div className="relative">
+                                            <Input
+                                                disabled
+                                                value={formData.total}
+                                                className="w-full pr-8 h-12 text-lg font-bold bg-muted/20 border-none no-spinner"
+                                            />
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-lg">$</span>
+                                        </div>
                                     </div>
 
                                     {move && (
