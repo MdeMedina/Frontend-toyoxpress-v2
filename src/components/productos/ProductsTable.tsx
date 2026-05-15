@@ -14,15 +14,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, Package, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 
 interface Producto {
     _id: string;
     Nombre: string;
     Código: string;
-    Marca: string;
+    Marca?: string;
+    Modelo?: string;
     "Existencia Actual": number;
     "Precio Minimo": number;
+    "Precio Mayor": number;
+    "Precio Oferta": number;
 }
 
 export function ProductsTable() {
@@ -32,12 +42,30 @@ export function ProductsTable() {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [total, setTotal] = useState(0);
+    const [limit, setLimit] = useState(10);
+
+    // Cargar el límite desde localStorage al montar el componente
+    useEffect(() => {
+        const savedLimit = localStorage.getItem("products_table_limit");
+        if (savedLimit) {
+            setLimit(parseInt(savedLimit));
+        }
+    }, []);
+
+    // Guardar el límite en localStorage cuando cambie
+    const handleLimitChange = (value: string) => {
+        const newLimit = parseInt(value);
+        setLimit(newLimit);
+        setPage(1);
+        localStorage.setItem("products_table_limit", value);
+    };
+
     const token = useAuthStore((state: any) => state.token);
 
-    const fetchProductos = async (currentPage: number, searchTerm: string) => {
+    const fetchProductos = async (currentPage: number, searchTerm: string, currentLimit: number) => {
         try {
             setLoading(true);
-            const res = await api.get(`/productos?page=${currentPage}&limit=10&search=${searchTerm}`);
+            const res = await api.get(`/productos?page=${currentPage}&limit=${currentLimit}&search=${searchTerm}`);
             setProductos(res.data.data);
             setTotalPages(res.data.totalPages);
             setTotal(res.data.total);
@@ -52,11 +80,11 @@ export function ProductsTable() {
         if (token) {
             // Un pequeño debounce para la búsqueda
             const timer = setTimeout(() => {
-                fetchProductos(page, search);
+                fetchProductos(page, search, limit);
             }, 500);
 
             // Escuchar el evento de carga del Excel para recargar la tabla solitos
-            const handleRefresh = () => fetchProductos(page, search);
+            const handleRefresh = () => fetchProductos(page, search, limit);
             window.addEventListener("local_inventory_updated", handleRefresh);
 
             return () => {
@@ -64,7 +92,7 @@ export function ProductsTable() {
                 window.removeEventListener("local_inventory_updated", handleRefresh);
             }
         }
-    }, [page, search, token]);
+    }, [page, search, limit, token]);
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearch(e.target.value);
@@ -73,31 +101,53 @@ export function ProductsTable() {
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <div className="relative w-full max-w-sm">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                <div className="relative w-full lg:max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         type="search"
                         placeholder="Buscar por Nombre o SKU..."
-                        className="pl-8 bg-background"
+                        className="pl-10 h-10 bg-background"
                         value={search}
                         onChange={handleSearchChange}
                     />
                 </div>
-                <Badge variant="secondary" className="px-3 py-1 font-normal bg-muted">
-                    {total} Productos Locales
-                </Badge>
+
+                <div className="flex items-center gap-4 w-full lg:w-auto justify-between lg:justify-end">
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">Mostrar:</span>
+                        <Select
+                            value={limit.toString()}
+                            onValueChange={handleLimitChange}
+                        >
+                            <SelectTrigger className="w-[100px] h-10 bg-background">
+                                <SelectValue placeholder="10" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="10">10 filas</SelectItem>
+                                <SelectItem value="25">25 filas</SelectItem>
+                                <SelectItem value="50">50 filas</SelectItem>
+                                <SelectItem value="100">100 filas</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <Badge variant="secondary" className="h-10 px-3 flex items-center font-normal bg-muted whitespace-nowrap">
+                        {total} Productos Locales
+                    </Badge>
+                </div>
             </div>
 
             <div className="rounded-md border bg-card overflow-hidden">
                 <Table>
                     <TableHeader className="bg-muted/50">
                         <TableRow>
-                            <TableHead>SKU</TableHead>
+                            <TableHead className="w-[140px]">SKU</TableHead>
                             <TableHead>Nombre</TableHead>
-                            <TableHead>Marca</TableHead>
-                            <TableHead className="text-right">Stock</TableHead>
-                            <TableHead className="text-right">Precio</TableHead>
+                            <TableHead className="w-[100px] text-right">Modelo</TableHead>
+                            <TableHead className="w-[80px] text-right">Stock</TableHead>
+                            <TableHead className="w-[100px] text-right">P. Mín</TableHead>
+                            <TableHead className="w-[100px] text-right">P. Oferta</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -118,13 +168,13 @@ export function ProductsTable() {
                         ) : (
                             productos.map((producto) => (
                                 <TableRow key={producto._id} className="hover:bg-muted/50 transition-colors">
-                                    <TableCell className="font-mono text-xs">{producto.Código}</TableCell>
-                                    <TableCell className="font-medium max-w-[200px] truncate" title={producto.Nombre}>
+                                    <TableCell className="font-mono text-[11px] whitespace-nowrap">{producto.Código}</TableCell>
+                                    <TableCell className="font-medium py-3 max-w-[400px] xl:max-w-[600px] truncate" title={producto.Nombre}>
                                         {producto.Nombre}
                                     </TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline" className="font-normal text-[10px] uppercase">
-                                            {producto.Marca || 'S/M'}
+                                    <TableCell className="text-right">
+                                        <Badge variant="outline" className="font-normal text-[10px] uppercase whitespace-nowrap">
+                                            {producto.Modelo || 'S/M'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -132,8 +182,11 @@ export function ProductsTable() {
                                             {producto["Existencia Actual"]}
                                         </span>
                                     </TableCell>
-                                    <TableCell className="text-right font-semibold">
+                                    <TableCell className="text-right font-semibold whitespace-nowrap">
                                         ${producto["Precio Minimo"]?.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                                    </TableCell>
+                                    <TableCell className="text-right font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                                        ${producto["Precio Oferta"]?.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
                                     </TableCell>
                                 </TableRow>
                             ))
