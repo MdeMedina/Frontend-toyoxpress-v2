@@ -15,9 +15,12 @@ interface ProductoLinea {
     codigo: string;
     nombre: string;
     marca?: string;
+    modelo?: string;
     referencia?: string;
     stock: number;
     precio: number;
+    precioMayor: number;
+    precioOferta: number;
 }
 
 interface InventarioDocumentProps {
@@ -114,10 +117,11 @@ const styles = StyleSheet.create({
     },
 
     colCodigo: { width: "13%", paddingRight: 4 },
-    colNombre: { width: "42%", paddingRight: 4 },
-    colMarca: { width: "18%", paddingRight: 4 },
-    colStock: { width: "10%", textAlign: "center" },
-    colPrecio: { width: "17%", textAlign: "right" },
+    colNombre: { width: "38%", paddingRight: 4 },
+    colMarca: { width: "13%", paddingRight: 4 },
+    colStock: { width: "6%", textAlign: "center" },
+    colPrecio: { width: "15%", textAlign: "right" },
+    colPrecioOferta: { width: "15%", textAlign: "right" },
 
     thText: {
         fontSize: 7,
@@ -199,7 +203,7 @@ export function InventarioDocument({ productos, hora, filtros }: InventarioDocum
                     <View style={styles.filtrosBadge}>
                         <Text style={[styles.chip, { fontFamily: "Helvetica-Bold" }]}>Filtros: </Text>
                         {filtros?.search && <Text style={styles.chip}>Búsqueda: "{filtros.search}"</Text>}
-                        {filtros?.marca && <Text style={styles.chip}>Marca: {filtros.marca}</Text>}
+                        {filtros?.marca && <Text style={styles.chip}>Modelo: {filtros.marca}</Text>}
                         {filtros?.soloConStock && <Text style={styles.chip}>Solo con stock</Text>}
                     </View>
                 )}
@@ -209,9 +213,10 @@ export function InventarioDocument({ productos, hora, filtros }: InventarioDocum
                     <View style={styles.tableHeader}>
                         <Text style={[styles.thText, styles.colCodigo]}>Código</Text>
                         <Text style={[styles.thText, styles.colNombre]}>Descripción</Text>
-                        <Text style={[styles.thText, styles.colMarca]}>Marca</Text>
+                        <Text style={[styles.thText, styles.colMarca]}>Modelo</Text>
                         <Text style={[styles.thText, styles.colStock]}>Stock</Text>
-                        <Text style={[styles.thText, styles.colPrecio]}>Precio $</Text>
+                        <Text style={[styles.thText, styles.colPrecio]}>Precio Mín</Text>
+                        <Text style={[styles.thText, styles.colPrecioOferta]}>P. Oferta</Text>
                     </View>
 
                     {productos.map((p, i) => (
@@ -225,11 +230,12 @@ export function InventarioDocument({ productos, hora, filtros }: InventarioDocum
                         >
                             <Text style={[styles.tdTextMuted, styles.colCodigo]}>{p.codigo}</Text>
                             <Text style={[styles.tdText, styles.colNombre]}>{p.nombre}</Text>
-                            <Text style={[styles.tdTextMuted, styles.colMarca]}>{p.marca || "—"}</Text>
+                            <Text style={[styles.tdTextMuted, styles.colMarca]}>{p.modelo || "—"}</Text>
                             <Text style={[p.stock > 0 ? styles.tdText : styles.tdRed, styles.colStock]}>
                                 {p.stock}
                             </Text>
                             <Text style={[styles.tdText, styles.colPrecio]}>{p.precio.toFixed(2)}</Text>
+                            <Text style={[styles.tdText, { color: "#16a34a" }, styles.colPrecioOferta]}>{p.precioOferta.toFixed(2)}</Text>
                         </View>
                     ))}
                 </View>

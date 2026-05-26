@@ -16,6 +16,7 @@ import {
     Search, UserRound, Package, X, Send, Plus,
     Tag, ChevronDown, Download, BookOpen
 } from "lucide-react";
+import { formatExcelDate } from "@/lib/utils";
 import Swal from "sweetalert2";
 
 // PDFDownloadLink must be dynamically imported to prevent SSR errors in Next.js
@@ -36,6 +37,7 @@ interface Cliente {
     Estado?: string;
     Ciudad?: string;
     Direccion?: string;
+    'Ultima Venta Credito'?: string;
 }
 
 interface Producto {
@@ -44,10 +46,11 @@ interface Producto {
     name: string;      // same as Nombre in Excel
     brands?: string;
     Marca?: string;
+    Modelo?: string;
     Ref?: string;
     'Precio Minimo'?: number;
     'Precio Mayor'?: number;
-    sale_price?: number;          // used as "Precio Oferta"
+    'Precio Oferta'?: number;
     'Existencia Actual'?: number;
     stock_quantity?: number;
 }
@@ -61,6 +64,10 @@ interface Linea {
     precio: number;
     total: number;
     stockMax?: number;
+    // Price points for recalculation
+    pMin: number;
+    pMayor: number;
+    pOferta: number;
 }
 
 interface Props {
@@ -83,7 +90,7 @@ function horaActual(): string {
 }
 
 const TIPO_PRECIO_MAP: Record<string, (p: Producto) => number> = {
-    'Precio Oferta': p => Number(p.sale_price || p['Precio Minimo'] || 0),
+    'Precio Oferta': p => Number(p['Precio Oferta'] || p['Precio Minimo'] || 0),
     'Precio Mayor': p => Number(p['Precio Mayor'] || 0),
     'Precio Minimo': p => Number(p['Precio Minimo'] || 0),
     'Local': p => Number(p['Precio Minimo'] || 0),
@@ -135,6 +142,31 @@ export function VentaForm({ onSuccess }: Props) {
 
     // Inventory modal
     const [showInventario, setShowInventario] = useState(false);
+    const [tipoPrecio, setTipoPrecio] = useState<string>("Precio Minimo");
+
+    // ── Sync Price Type with Client ─────────────────────────────────────────
+    useEffect(() => {
+        if (selectedCliente?.['Tipo de Precio']) {
+            setTipoPrecio(selectedCliente['Tipo de Precio'].trim());
+        } else {
+            setTipoPrecio("Precio Minimo");
+        }
+    }, [selectedCliente?._id]);
+
+    // ── Recalculate Cart when Price Type changes ────────────────────────────
+    useEffect(() => {
+        setCarrito(prev => prev.map(line => {
+            let newPrice = line.pMin;
+            if (tipoPrecio === 'Precio Mayor') newPrice = line.pMayor || line.pMin;
+            if (tipoPrecio === 'Precio Oferta') newPrice = line.pOferta || line.pMin;
+            
+            return {
+                ...line,
+                precio: newPrice,
+                total: newPrice * (Number(line.cantidad) || 0)
+            };
+        }));
+    }, [tipoPrecio]);
 
     // ── Client search ──────────────────────────────────────────────────────
 
@@ -172,39 +204,88 @@ export function VentaForm({ onSuccess }: Props) {
 
     // ── Cart operations ────────────────────────────────────────────────────
 
-    const agregarProducto = (p: Producto) => {
-        const stock = Number(p['Existencia Actual'] || p.stock_quantity || 0);
+    const agregarProducto = async (p: Producto) => {
+        const stock = Number(p['Existencia Actual'] ?? p.stock_quantity ?? 0);
         if (stock <= 0) {
             Swal.fire('', 'Este producto no tiene stock disponible.', 'warning');
             return;
         }
 
-        const precio = getPrecio(p, selectedCliente?.['Tipo de Precio']);
-        const yaExiste = carrito.findIndex(l => l.codigo === p.sku);
-        if (yaExiste >= 0) {
-            // Increment existing line
-            const updated = [...carrito];
-            const currentQty = Number(updated[yaExiste].cantidad) || 0;
-            if (currentQty + 1 > stock) {
-                Swal.fire('', `Solo hay ${stock} unidades en stock.`, 'warning');
-                return;
+        const yaExisteIdx = carrito.findIndex(l => l.codigo === p.sku);
+        let initialQty = 1;
+        let title = 'Añadir al Carrito';
+        let text = `¿Cuántas unidades de "${p.name}" desea añadir? (Stock: ${stock})`;
+
+        if (yaExisteIdx >= 0) {
+            const currentQty = Number(carrito[yaExisteIdx].cantidad) || 0;
+            title = 'Producto ya en carrito';
+            text = `"${p.name}" ya tiene ${currentQty} unidades en el carrito. Ingrese la NUEVA cantidad total deseada: (Stock: ${stock})`;
+            initialQty = currentQty;
+        }
+
+        const { value: quantity } = await Swal.fire({
+            title,
+            text,
+            input: 'number',
+            inputAttributes: {
+                min: '1',
+                max: stock.toString(),
+                step: '1'
+            },
+            inputValue: initialQty,
+            showCancelButton: true,
+            confirmButtonText: yaExisteIdx >= 0 ? 'Actualizar' : 'Añadir',
+            cancelButtonText: 'Cancelar',
+            inputValidator: (value) => {
+                if (!value || parseInt(value) <= 0) {
+                    return 'Ingrese una cantidad válida';
+                }
+                if (parseInt(value) > stock) {
+                    return `Solo hay ${stock} unidades disponibles`;
+                }
             }
-            updated[yaExiste].cantidad = currentQty + 1;
-            updated[yaExiste].total = updated[yaExiste].cantidad * updated[yaExiste].precio;
+        });
+
+        if (!quantity) return;
+        const q = parseInt(quantity);
+
+        const precio = getPrecio(p, selectedCliente?.['Tipo de Precio']);
+
+        if (yaExisteIdx >= 0) {
+            // Update existing line with the new TOTAL quantity
+            const updated = [...carrito];
+            updated[yaExisteIdx].cantidad = q;
+            updated[yaExisteIdx].total = q * updated[yaExisteIdx].precio;
             setCarrito(updated);
+            
+            // Subtle toast instead of big alert for success
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2000,
+                timerProgressBar: true,
+            });
+            Toast.fire({
+                icon: 'success',
+                title: 'Cantidad actualizada'
+            });
         } else {
             setCarrito(prev => {
                 const newCart = [...prev, {
                     codigo: p.sku,
                     nombre: p.name,
                     marca: p.brands || p.Marca,
+                    modelo: p.Modelo || "",
                     referencia: p.Ref,
-                    cantidad: 1,
+                    cantidad: q,
                     precio,
-                    total: precio,
+                    total: precio * q,
                     stockMax: stock,
+                    pMin: Number(p['Precio Minimo'] || 0),
+                    pMayor: Number(p['Precio Mayor'] || 0),
+                    pOferta: Number(p['Precio Oferta'] || 0),
                 }];
-                // Ordenar alfabéticamente por referencia como en la V1
                 return newCart.sort((a, b) => {
                     const rA = String(a.referencia || '');
                     const rB = String(b.referencia || '');
@@ -312,12 +393,24 @@ export function VentaForm({ onSuccess }: Props) {
                         <div className="flex items-start justify-between gap-4 p-3 bg-muted/30 rounded-lg">
                             <div className="flex-1 min-w-0">
                                 <p className="font-semibold text-sm truncate">{selectedCliente.Nombre}</p>
-                                <p className="text-xs text-muted-foreground">RIF: {selectedCliente.Rif} · {selectedCliente.Ciudad}</p>
-                                {selectedCliente['Tipo de Precio'] && (
-                                    <span className={`mt-1 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${PRECIO_BADGE[selectedCliente['Tipo de Precio'].trim()] || 'bg-gray-100 text-gray-600'}`}>
-                                        <Tag className="h-2.5 w-2.5" /> {selectedCliente['Tipo de Precio']}
+                                <p className="text-xs text-muted-foreground">
+                                    RIF: {selectedCliente.Rif} · {selectedCliente.Ciudad}
+                                    {selectedCliente['Ultima Venta Credito'] && (
+                                        <span className="ml-2 px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-md font-medium">
+                                            Última Venta: {formatExcelDate(selectedCliente['Ultima Venta Credito'])}
+                                        </span>
+                                    )}
+                                </p>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full ${PRECIO_BADGE[tipoPrecio] || 'bg-gray-100 text-gray-600'}`}>
+                                        <Tag className="h-2.5 w-2.5" /> Precio Aplicado: {tipoPrecio}
                                     </span>
-                                )}
+                                    {selectedCliente['Tipo de Precio'] && selectedCliente['Tipo de Precio'].trim() !== tipoPrecio && (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full bg-muted text-muted-foreground opacity-70">
+                                            <Tag className="h-2.5 w-2.5" /> Cliente: {selectedCliente['Tipo de Precio']}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             <button onClick={() => { setSelectedCliente(null); setCarrito([]); }} className="text-muted-foreground hover:text-destructive mt-0.5">
                                 <X className="h-4 w-4" />
@@ -373,7 +466,7 @@ export function VentaForm({ onSuccess }: Props) {
                                     ) : productoResults.length === 0 ? (
                                         <p className="text-xs text-muted-foreground px-4 py-3">Sin resultados.</p>
                                     ) : productoResults.map(p => {
-                                        let precio = getPrecio(p, selectedCliente?.['Tipo de Precio']);
+                                        let precio = getPrecio(p, tipoPrecio);
                                         const stock = Number(p['Existencia Actual'] ?? p.stock_quantity ?? 0);
                                         return (
                                             <button key={p._id} onClick={() => agregarProducto(p)}

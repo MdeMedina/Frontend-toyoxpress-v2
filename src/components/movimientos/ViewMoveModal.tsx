@@ -40,6 +40,9 @@ export default function ViewMoveModal({ move, onClose, onSuccess }: ViewMoveModa
     const currentVale = move.vale || (isCajaChica ? ident : "");
     const currentStatus = currentVale ? "Aprobado" : "Pendiente";
 
+    const valorDolaresBs = move.dolares || (move.bs > 0 && move.change > 0 ? move.bs / move.change : move.monto) || 0;
+    const cambioBs = move.change || (move.bs && valorDolaresBs ? move.bs / valorDolaresBs : 0);
+
     const handleApprove = async () => {
         if (!vale && !isCajaChica) {
             alert("Debes ingresar un número de aprobación (Vale).");
@@ -52,9 +55,10 @@ export default function ViewMoveModal({ move, onClose, onSuccess }: ViewMoveModa
                 vale: isCajaChica ? ident : vale
             });
             onSuccess();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error approving move:", error);
-            alert("No se pudo aprobar el movimiento.");
+            const msg = error.response?.data?.message || "No se pudo aprobar el movimiento.";
+            alert(msg);
         } finally {
             setLoading(false);
         }
@@ -157,6 +161,7 @@ export default function ViewMoveModal({ move, onClose, onSuccess }: ViewMoveModa
                                             const payments = [];
                                             if (move.zelle > 0) payments.push("Zelle");
                                             if (move.efectivo > 0) payments.push("Efectivo");
+                                            if (move.otro > 0) payments.push("Otro");
                                             if (move.dolares > 0) payments.push("Dólares");
                                             if (move.bs > 0) payments.push("Bolívares");
                                             // legacy support
@@ -166,15 +171,45 @@ export default function ViewMoveModal({ move, onClose, onSuccess }: ViewMoveModa
                                     </span>
                                 </div>
 
+                                {/* Desglose detallado de los montos */}
+                                {(move.efectivo > 0 || move.zelle > 0 || move.otro > 0 || move.dolares > 0) && (
+                                    <div className="text-xs border border-muted-foreground/20 pt-2 pb-2 px-3 space-y-1.5 bg-muted/10 rounded-md">
+                                        {move.efectivo > 0 && (
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Efectivo:</span>
+                                                <span className="font-semibold text-foreground">${move.efectivo.toFixed(2)}</span>
+                                            </div>
+                                        )}
+                                        {move.zelle > 0 && (
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Zelle:</span>
+                                                <span className="font-semibold text-foreground">${move.zelle.toFixed(2)}</span>
+                                            </div>
+                                        )}
+                                        {move.otro > 0 && (
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Otro:</span>
+                                                <span className="font-semibold text-foreground">${move.otro.toFixed(2)}</span>
+                                            </div>
+                                        )}
+                                        {move.dolares > 0 && (
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Dólares (Bolívares):</span>
+                                                <span className="font-semibold text-foreground">${move.dolares.toFixed(2)}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 {(move.bs > 0 || (move.pago && String(move.pago).toLowerCase().includes('bs'))) && (
                                     <div className="flex justify-between items-center text-sm pt-1 pb-2">
                                         <div className="flex flex-col">
                                             <span className="text-muted-foreground">Valor $:</span>
-                                            <span className="font-medium text-foreground">${Math.abs(move.monto || 0).toFixed(2)}</span>
+                                            <span className="font-medium text-foreground">${Math.abs(valorDolaresBs || 0).toFixed(2)}</span>
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-muted-foreground">Cambio:</span>
-                                            <span className="font-medium text-foreground">{move.change || (move.bs && move.monto && Math.abs(move.monto) > 0 ? (move.bs / Math.abs(move.monto)).toFixed(2) : 0)}Bs</span>
+                                            <span className="font-medium text-foreground">{typeof cambioBs === 'number' ? (cambioBs % 1 === 0 ? cambioBs : cambioBs.toFixed(2)) : cambioBs}Bs</span>
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-muted-foreground">Bs:</span>

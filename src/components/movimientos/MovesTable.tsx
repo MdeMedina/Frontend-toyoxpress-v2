@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
     Table,
     TableBody,
@@ -22,8 +22,17 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import RequirePermission from "@/components/auth/RequirePermission";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 
 export default function MovesTable() {
+    const permissions = useAuthStore(state => state.permissions);
     const [movimientos, setMovimientos] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -32,22 +41,36 @@ export default function MovesTable() {
     const [limit, setLimit] = useState(50);
     const [totalPages, setTotalPages] = useState(1);
     const [sortBy, setSortBy] = useState("id");
-    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
     // Financial Totals
     const [saldoTotal, setSaldoTotal] = useState(0);
     const [cajaChica, setCajaChica] = useState(0);
 
+    // Helper for initial dates
+    const getInitialDates = () => {
+        const today = new Date();
+        const past = new Date();
+        past.setMonth(today.getMonth() - 3);
+        const format = (d: Date) => {
+            const tzOffset = d.getTimezoneOffset() * 60000;
+            return new Date(d.getTime() - tzOffset).toISOString().split('T')[0];
+        };
+        return { inicio: format(past), cierre: format(today) };
+    };
+
+    const initialDates = getInitialDates();
+
     // Filters state (extended based on user request)
     const [filters, setFilters] = useState({
         movimiento: "",
-        cuenta: "",
+        cuenta: [] as string[],
         concepto: "",
         vale: "",
         usuario: "",
         tipoPago: "",
-        fechaInicio: "",
-        fechaCierre: "",
+        fechaInicio: initialDates.inicio,
+        fechaCierre: initialDates.cierre,
         status: "no_verificados"
     });
 
@@ -61,6 +84,7 @@ export default function MovesTable() {
     const [openUserSelect, setOpenUserSelect] = useState(false);
     const [inputPage, setInputPage] = useState(page.toString());
     const [cuentasDB, setCuentasDB] = useState<any[]>([]);
+    const [openCuentaSelect, setOpenCuentaSelect] = useState(false);
 
     useEffect(() => {
         setInputPage(page.toString());
@@ -76,7 +100,9 @@ export default function MovesTable() {
             params.append('sortBy', sortBy);
             params.append('sortOrder', sortOrder);
             if (filters.movimiento) params.append('movimiento', filters.movimiento);
-            if (filters.cuenta) params.append('cuenta', filters.cuenta);
+            if (filters.cuenta && filters.cuenta.length > 0) {
+                params.append('cuenta', filters.cuenta.join(','));
+            }
             if (filters.concepto) params.append('concepto', filters.concepto);
             if (filters.vale) params.append('vale', filters.vale);
             if (filters.usuario) params.append('usuario', filters.usuario);
@@ -139,8 +165,13 @@ export default function MovesTable() {
         loadFiltersData();
     }, []);
 
+    const fetchMovimientosRef = useRef(fetchMovimientos);
     useEffect(() => {
-        const handleRefresh = () => fetchMovimientos();
+        fetchMovimientosRef.current = fetchMovimientos;
+    });
+
+    useEffect(() => {
+        const handleRefresh = () => fetchMovimientosRef.current();
         window.addEventListener("refresh_movimientos", handleRefresh);
 
         return () => window.removeEventListener("refresh_movimientos", handleRefresh);
@@ -180,15 +211,19 @@ export default function MovesTable() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                     <div className="space-y-1">
                         <span className="text-sm font-medium text-foreground">Tipo de movimiento</span>
-                        <select
-                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                        <Select
                             value={filters.movimiento}
-                            onChange={(e) => setFilters(f => ({ ...f, movimiento: e.target.value }))}
+                            onValueChange={(val) => setFilters(f => ({ ...f, movimiento: val === "all" ? "" : val }))}
                         >
-                            <option value="">Select...</option>
-                            <option value="ingreso">Ingreso</option>
-                            <option value="egreso">Egreso</option>
-                        </select>
+                            <SelectTrigger className="h-9 w-full bg-background border-input">
+                                <SelectValue placeholder="Select..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Select...</SelectItem>
+                                <SelectItem value="ingreso">Ingreso</SelectItem>
+                                <SelectItem value="egreso">Egreso</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div className="space-y-1">
@@ -260,18 +295,71 @@ export default function MovesTable() {
 
                     <div className="space-y-1">
                         <span className="text-sm font-medium text-foreground">Cuenta</span>
-                        <select
-                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                            value={filters.cuenta}
-                            onChange={(e) => setFilters(f => ({ ...f, cuenta: e.target.value }))}
-                        >
-                            <option value="">Select...</option>
-                            {cuentasDB.map((cuenta: any) => (
-                                <option key={cuenta._id || cuenta.value} value={cuenta.value}>
-                                    {cuenta.label}
-                                </option>
-                            ))}
-                        </select>
+                        <Popover open={openCuentaSelect} onOpenChange={setOpenCuentaSelect}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={openCuentaSelect}
+                                    className="w-full justify-between h-9 px-3 font-normal"
+                                >
+                                    <span className="truncate">
+                                        {filters.cuenta.length === 0 
+                                            ? "Select..." 
+                                            : filters.cuenta.length === 1 
+                                                ? cuentasDB.find(c => c.value === filters.cuenta[0])?.label || filters.cuenta[0]
+                                                : `${filters.cuenta.length} seleccionadas`}
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                        {filters.cuenta.length > 0 && (
+                                            <div
+                                                className="h-4 w-4 shrink-0 opacity-50 hover:opacity-100 flex items-center justify-center cursor-pointer"
+                                                onPointerDown={(e) => {
+                                                    e.stopPropagation();
+                                                    setFilters(f => ({ ...f, cuenta: [] }));
+                                                }}
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </div>
+                                        )}
+                                        <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                                    </div>
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[300px] p-0" align="start">
+                                <Command>
+                                    <CommandInput placeholder="Search account..." />
+                                    <CommandList>
+                                        <CommandEmpty>No account found.</CommandEmpty>
+                                        <CommandGroup className="max-h-64 overflow-y-auto">
+                                            {cuentasDB.map((cuenta) => (
+                                                <CommandItem
+                                                    key={cuenta._id || cuenta.value}
+                                                    value={cuenta.value}
+                                                    onSelect={() => {
+                                                        const isSelected = filters.cuenta.includes(cuenta.value);
+                                                        const newCuentas = isSelected
+                                                            ? filters.cuenta.filter(c => c !== cuenta.value)
+                                                            : [...filters.cuenta, cuenta.value];
+                                                        setFilters(f => ({ ...f, cuenta: newCuentas }));
+                                                    }}
+                                                >
+                                                    <div className={cn(
+                                                        "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                                                        filters.cuenta.includes(cuenta.value)
+                                                            ? "bg-primary text-primary-foreground"
+                                                            : "opacity-50 [&_svg]:invisible"
+                                                    )}>
+                                                        <Check className={cn("h-4 w-4")} />
+                                                    </div>
+                                                    {cuenta.label}
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
                     </div>
                 </div>
 
@@ -297,6 +385,7 @@ export default function MovesTable() {
                             <option value="bs">Bs</option>
                             <option value="zelle">Zelle</option>
                             <option value="efectivo">Efectivo</option>
+                            <option value="otro">Otro</option>
                         </select>
                     </div>
 
@@ -312,23 +401,29 @@ export default function MovesTable() {
                 </div>
 
                 {/* Legacy V1 layout: Summary Pills immediately under Filters row */}
-                <div className="flex flex-col sm:flex-row justify-between items-center bg-muted/40 rounded-lg pt-2 pb-2 mb-4 px-2">
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Caja Chica:</span>
-                        <div className={`px-[6px] py-[2px] rounded-[5px] text-white font-bold text-[16px] leading-tight ${cajaChica >= 0 ? "bg-[green]" : "bg-[#B21F00]"
-                            }`}>
-                            {cajaChica.toFixed(2)}$
-                        </div>
-                    </div>
+                {(permissions?.verCajaChica || permissions?.verSaldoTotal) && (
+                    <div className="flex flex-col sm:flex-row justify-between items-center bg-muted/40 rounded-lg pt-2 pb-2 mb-4 px-2">
+                        {permissions?.verCajaChica && (
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">Caja Chica:</span>
+                                <div className={`px-[6px] py-[2px] rounded-[5px] text-white font-bold text-[16px] leading-tight ${cajaChica >= 0 ? "bg-[green]" : "bg-[#B21F00]"
+                                    }`}>
+                                    {cajaChica.toFixed(2)}$
+                                </div>
+                            </div>
+                        )}
 
-                    <div className="flex items-center gap-2 mt-2 sm:mt-0">
-                        <span className="text-sm font-medium">Saldo Total:</span>
-                        <div className={`px-[6px] py-[2px] rounded-[5px] text-white font-bold text-[16px] leading-tight ${saldoTotal >= 0 ? "bg-[green]" : "bg-[#B21F00]"
-                            }`}>
-                            {saldoTotal.toFixed(2)}$
-                        </div>
+                        {permissions?.verSaldoTotal && (
+                            <div className="flex items-center gap-2 mt-2 sm:mt-0">
+                                <span className="text-sm font-medium">Saldo Total:</span>
+                                <div className={`px-[6px] py-[2px] rounded-[5px] text-white font-bold text-[16px] leading-tight ${saldoTotal >= 0 ? "bg-[green]" : "bg-[#B21F00]"
+                                    }`}>
+                                    {saldoTotal.toFixed(2)}$
+                                </div>
+                            </div>
+                        )}
                     </div>
-                </div>
+                )}
 
 
                 {/* Bottom Filter options: Dates and status */}
@@ -387,18 +482,22 @@ export default function MovesTable() {
             <div className="flex items-center justify-between bg-card border rounded-lg p-2 mb-4 shadow-sm">
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-foreground">Mostrar:</span>
-                    <select
-                        className="h-8 rounded-md border border-input bg-transparent px-2 py-1 text-sm shadow-sm"
-                        value={limit}
-                        onChange={(e) => {
-                            setLimit(Number(e.target.value));
+                    <Select
+                        value={limit.toString()}
+                        onValueChange={(val) => {
+                            setLimit(Number(val));
                             setPage(1);
                         }}
                     >
-                        <option value={10}>10</option>
-                        <option value={20}>20</option>
-                        <option value={50}>50</option>
-                    </select>
+                        <SelectTrigger className="h-8 w-[70px] bg-background border-input">
+                            <SelectValue placeholder={limit.toString()} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="10">10</SelectItem>
+                            <SelectItem value="20">20</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -462,7 +561,7 @@ export default function MovesTable() {
                                                 setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
                                             } else {
                                                 setSortBy('id');
-                                                setSortOrder('desc');
+                                                setSortOrder('asc');
                                             }
                                         }}
                                     >
@@ -486,7 +585,7 @@ export default function MovesTable() {
                                                 setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
                                             } else {
                                                 setSortBy('creado');
-                                                setSortOrder('desc');
+                                                setSortOrder('asc');
                                             }
                                         }}
                                     >
